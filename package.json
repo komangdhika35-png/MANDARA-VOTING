@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "import:siswa": "node scripts/import-students.mjs"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "csv-parse": "^7.0.3",
     "next": "^16.4.3",
     "react": "^19.1.0",

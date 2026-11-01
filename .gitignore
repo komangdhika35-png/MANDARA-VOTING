@@ -5,3 +5,6 @@ build/
 coverage/
 next-env.d.ts
 .vercel/
+.data/
+.env*
+!.env.example

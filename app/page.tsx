@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { OrganizationId } from "@/lib/election";
+import AdminDashboard from "@/app/admin-dashboard";
 
-type OrganizationId = "mpk" | "osis" | "ky";
 type Candidate = {
   id: string;
   name: string;
@@ -145,37 +146,59 @@ const organizations: {
   },
 ];
 
-const STORAGE_KEY = "suara-kita-demo-votes";
-const VOTER_SESSION_KEY = "suara-mandara-voter";
+type VoteRecord = Partial<Record<OrganizationId, true>>;
 
-type VoteRecord = Partial<Record<OrganizationId, string>>;
+function toVoteRecord(organizationIds: OrganizationId[]): VoteRecord {
+  const record: VoteRecord = {};
+  for (const organizationId of organizationIds) record[organizationId] = true;
+  return record;
+}
 
 export default function Home() {
-  const [name, setName] = useState("");
   const [nis, setNis] = useState("");
+  const [password, setPassword] = useState("");
   const [voter, setVoter] = useState("");
+  const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [activeOrganization, setActiveOrganization] =
     useState<OrganizationId>("mpk");
   const [votes, setVotes] = useState<VoteRecord>({});
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [appError, setAppError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    queueMicrotask(() => {
-      if (!active) return;
+    async function loadSession() {
       try {
-        const savedVotes = localStorage.getItem(STORAGE_KEY);
-        if (savedVotes) setVotes(JSON.parse(savedVotes) as VoteRecord);
-        setVoter(sessionStorage.getItem(VOTER_SESSION_KEY) ?? "");
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        if (response.status === 401) return;
+
+        const data = (await response.json()) as {
+          role?: "student" | "admin";
+          voter?: { name: string };
+          votedOrganizations?: OrganizationId[];
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error ?? "Gagal memuat sesi pemilih.");
+        if (!active) return;
+
+        setRole(data.role ?? "student");
+        setVoter(data.voter?.name ?? "");
+        setVotes(toVoteRecord(data.votedOrganizations ?? []));
       } catch (error) {
-        console.error("Gagal memuat data simulasi pemilihan:", error);
+        if (active) {
+          console.error("Gagal memuat sesi pemilih:", error);
+          setAppError("Data pemilihan belum dapat dimuat. Periksa koneksi lalu muat ulang halaman.");
+        }
       } finally {
         if (active) setReady(true);
       }
-    });
+    }
+
+    void loadSession();
     return () => {
       active = false;
     };
@@ -188,35 +211,91 @@ export default function Home() {
   const votedCount = Object.keys(votes).length;
   const allVoted = votedCount === organizations.length;
 
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const cleanName = name.trim();
     const cleanNis = nis.trim();
-    if (!cleanName || !cleanNis) {
-      setLoginError("Nama dan NIS wajib diisi.");
+    const adminLogin = cleanNis.toLocaleLowerCase("en-US") === "admin";
+    if (!cleanNis || (adminLogin && !password)) {
+      setLoginError(adminLogin ? "Password admin wajib diisi." : "NIS wajib diisi.");
       return;
     }
     setLoginError("");
-    setVoter(cleanName);
-    sessionStorage.setItem(VOTER_SESSION_KEY, cleanName);
-    setNis("");
-  }
-
-  function handleLogout() {
-    sessionStorage.removeItem(VOTER_SESSION_KEY);
-    setVoter("");
-  }
-
-  function submitVote() {
-    if (!selectedCandidate || votes[activeOrganization]) return;
-    const nextVotes = { ...votes, [activeOrganization]: selectedCandidate };
+    setIsSubmitting(true);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextVotes));
-      setVotes(nextVotes);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          adminLogin
+            ? { username: "admin", password }
+            : { nis: cleanNis },
+        ),
+      });
+      const data = (await response.json()) as {
+        role?: "student" | "admin";
+        voter?: { name: string };
+        votedOrganizations?: OrganizationId[];
+        error?: string;
+      };
+      if (!response.ok) throw new Error(data.error ?? "Login tidak berhasil.");
+
+      setRole(data.role ?? "student");
+      setVoter(data.voter?.name ?? "");
+      setVotes(toVoteRecord(data.votedOrganizations ?? []));
+      setNis("");
+      setPassword("");
+    } catch (error) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Tidak dapat terhubung ke server pemilihan. Silakan coba lagi.",
+      );
+      setPassword("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleLogout() {
+    setAppError("");
+    const response = await fetch("/api/auth/session", { method: "DELETE" });
+    const data = (await response.json()) as { error?: string };
+    if (!response.ok) throw new Error(data.error ?? "Sesi belum dapat diakhiri. Silakan coba lagi.");
+    setVoter("");
+    setRole(null);
+    setVotes({});
+  }
+
+  async function submitVote() {
+    if (!selectedCandidate || votes[activeOrganization]) return;
+    setIsSubmitting(true);
+    setAppError("");
+    try {
+      const response = await fetch("/api/votes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId: activeOrganization,
+          candidateId: selectedCandidate,
+        }),
+      });
+      const data = (await response.json()) as {
+        votedOrganizations?: OrganizationId[];
+        error?: string;
+      };
+      if (!response.ok) throw new Error(data.error ?? "Suara belum dapat disimpan.");
+
+      setVotes(toVoteRecord(data.votedOrganizations ?? []));
       setSelectedCandidate("");
       setShowConfirmation(false);
     } catch (error) {
-      console.error("Gagal menyimpan suara simulasi:", error);
+      setAppError(
+        error instanceof Error
+          ? error.message
+          : "Tidak dapat menyimpan suara ke database. Silakan coba lagi.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -226,7 +305,8 @@ export default function Home() {
 
   if (!ready) return <main className="loading-screen" aria-label="Memuat aplikasi" />;
 
-  if (!voter) {
+  if (!role) {
+    const adminLogin = nis.trim().toLocaleLowerCase("en-US") === "admin";
     return (
       <main className="login-page">
         <div className="login-wrap">
@@ -243,70 +323,76 @@ export default function Home() {
                 <p>Setiap pilihan punya arti. Yuk, tentukan pemimpin yang paling mewakili harapanmu.</p>
               </div>
               <div className="visual-bottom">
-                <div className="orbit orbit-one" />
-                <div className="orbit orbit-two" />
-                <div className="orbit orbit-three" />
-                <span className="orbit-star star-one">✳</span>
-                <span className="orbit-star star-two">✳</span>
-                <div className="vote-stamp"><span>01</span><span>SUARA<br />MANDARA</span></div>
-                <div className="candidate-avatars" aria-hidden="true">
-                  <span className="avatar avatar-one">NP</span>
-                  <span className="avatar avatar-two">DS</span>
-                  <span className="avatar avatar-three">KA</span>
+                <span className="visual-decoration visual-decoration-one" aria-hidden="true" />
+                <span className="visual-decoration visual-decoration-two" aria-hidden="true" />
+                <div className="election-note">
+                  <span className="election-note-icon" aria-hidden="true">✓</span>
+                  <span><strong>Satu suara berarti</strong><small>MPK&nbsp; · &nbsp;OSIS&nbsp; · &nbsp;KY</small></span>
                 </div>
-                <span className="avatar-note">Calon pemimpin<br />masa depan ✦</span>
-                <span className="visual-footnote">MPK &nbsp;·&nbsp; OSIS &nbsp;·&nbsp; KY</span>
+                <span className="visual-footnote">PEMILIHAN ORGANISASI SISWA</span>
               </div>
             </div>
 
             <div className="login-form-panel">
               <div className="form-topline">
-                <span>PORTAL PEMILIH</span>
-                <span className="secure-label"><span>✦</span> AMAN &amp; MUDAH</span>
+                <span>{adminLogin ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
+                <span className="secure-label"><span>✦</span> SUARA MANDARA</span>
               </div>
               <div className="form-heading">
                 <span className="form-icon">↗</span>
-                <p>Selamat datang, pemilih!</p>
-                <h2>Mulai dari<br />suaramu.</h2>
-                <span className="form-subtitle">Isi nama dan NIS untuk melanjutkan pemilihan.</span>
+                <p>{adminLogin ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
+                <h2>{adminLogin ? <>Lihat hasil<br />pemilihan.</> : <>Mulai dari<br />suaramu.</>}</h2>
+                <span className="form-subtitle">
+                  {adminLogin ? "Masukkan password admin untuk membuka rekap suara." : "Masukkan NIS untuk melanjutkan pemilihan."}
+                </span>
               </div>
               <form className="login-form" onSubmit={handleLogin}>
-                <label htmlFor="name">Nama lengkap</label>
-                <div className="input-wrap">
-                  <span className="input-icon" aria-hidden="true">♙</span>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="Masukkan nama lengkap"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                  />
-                </div>
-                <label htmlFor="nis">Nomor Induk Siswa (NIS)</label>
+                <label htmlFor="nis">{adminLogin ? "Username admin" : "Nomor Induk Siswa (NIS)"}</label>
                 <div className="input-wrap">
                   <span className="input-icon nis-icon" aria-hidden="true">#</span>
                   <input
                     id="nis"
                     name="nis"
                     type="text"
-                    inputMode="numeric"
+                    inputMode="text"
+                    autoCapitalize="none"
                     autoComplete="off"
-                    placeholder="Masukkan NIS kamu"
+                    placeholder={adminLogin ? "admin" : "Masukkan NIS kamu"}
                     value={nis}
-                    onChange={(event) => setNis(event.target.value)}
+                    onChange={(event) => {
+                      setNis(event.target.value);
+                      setLoginError("");
+                      setPassword("");
+                    }}
                     required
                   />
                 </div>
+                {adminLogin && (
+                  <>
+                    <label htmlFor="admin-password">Password admin</label>
+                    <div className="input-wrap">
+                      <span className="input-icon lock-icon" aria-hidden="true">▣</span>
+                      <input
+                        id="admin-password"
+                        name="password"
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="Masukkan password admin"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 {loginError && <p className="form-error" role="alert">{loginError}</p>}
-                <button className="primary-button login-button" type="submit">
-                  Masuk &amp; mulai memilih <span aria-hidden="true">→</span>
+                {appError && <p className="form-error" role="alert">{appError}</p>}
+                <button className="primary-button login-button" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Memeriksa data..." : adminLogin ? "Lihat rekap suara" : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <p className="login-hint"><span>✳</span> Pastikan nama dan NIS sesuai dengan data siswa.</p>
-              <p className="demo-notice">Mode demo: NIS belum diverifikasi oleh sistem sekolah.</p>
+              <p className="login-hint"><span>✳</span> {adminLogin ? "Khusus admin sekolah." : "Gunakan NIS yang terdaftar sebagai pemilih."}</p>
+              <p className="demo-notice">Data siswa dan suara tersimpan di database SQLite sekolah.</p>
               <div className="login-footer"><span>© 2026 Suara Mandara</span><span>Suaramu berarti <span className="heart">♥</span></span></div>
             </div>
           </section>
@@ -314,6 +400,10 @@ export default function Home() {
         </div>
       </main>
     );
+  }
+
+  if (role === "admin") {
+    return <AdminDashboard onLogout={handleLogout} />;
   }
 
   return (
@@ -324,7 +414,11 @@ export default function Home() {
           <span className="brand-copy">suara<span>mandara</span></span>
         </a>
         <span className="header-election"><span className="live-dot" /> PEMILIHAN SISWA 2026/2027</span>
-        <button className="profile-button" onClick={handleLogout} title="Keluar">
+        <button className="profile-button" onClick={() => {
+          void handleLogout().catch((error: unknown) => {
+            setAppError(error instanceof Error ? error.message : "Gagal keluar dari aplikasi.");
+          });
+        }} title="Keluar">
           <span className="profile-avatar">{voter.slice(0, 2).toUpperCase()}</span>
           <span className="profile-name">{voter}<small>Pemilih</small></span>
           <span className="logout-icon" aria-hidden="true">↗</span>
@@ -332,6 +426,7 @@ export default function Home() {
       </header>
 
       <div className="app-content">
+        {appError && <p className="form-error app-error" role="alert">{appError}</p>}
         <section className="welcome-strip">
           <div>
             <span className="eyebrow dark-eyebrow"><span className="live-dot" /> SAATNYA IKUT MENENTUKAN</span>
@@ -437,7 +532,7 @@ export default function Home() {
           </section>
         </div>
         <footer className="app-footer"><span>© 2026 SUARA MANDARA</span><span>Satu siswa, satu suara, satu perubahan. <span className="heart">♥</span></span></footer>
-        <p className="demo-footer-note">Prototipe demo — data pemilihan tersimpan hanya di browser ini dan bukan suara resmi.</p>
+        <p className="demo-footer-note">Suara disimpan di database SQLite pada server sekolah.</p>
       </div>
 
       {showConfirmation && selectedCandidateDetails && (
@@ -452,9 +547,11 @@ export default function Home() {
             <p>Kamu memilih <strong>{selectedCandidateDetails.name}</strong> sebagai ketua {currentOrganization.name}. Setelah dikirim, pilihan tidak bisa diubah.</p>
             <div className="modal-actions">
               <button className="secondary-button" onClick={() => setShowConfirmation(false)}>Lihat lagi</button>
-              <button className="primary-button" onClick={submitVote}>Ya, kirim suara <span>→</span></button>
+              <button className="primary-button" onClick={submitVote} disabled={isSubmitting}>
+                {isSubmitting ? "Menyimpan..." : "Ya, kirim suara"} <span>→</span>
+              </button>
             </div>
-            <span className="demo-modal-note">Simulasi demo — tidak dikirim ke server.</span>
+            <span className="demo-modal-note">Suara disimpan dengan aman dan tidak dapat diubah.</span>
           </section>
         </div>
       )}
