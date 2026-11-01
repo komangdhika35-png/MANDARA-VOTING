@@ -19,3 +19,15 @@ export const candidateNames: Record<string, string> = {
   "ky-2": "Bagas Wicaksono",
   "ky-3": "Intan Permata",
 };
+
+export const candidateViceNames: Record<string, string> = {
+  "mpk-1": "Rizky Aditya",
+  "mpk-2": "Nabila Safitri",
+  "mpk-3": "Farhan Maulana",
+  "osis-1": "Citra Lestari",
+  "osis-2": "Rafi Pratama",
+  "osis-3": "Dewi Anggraini",
+  "ky-1": "Arkan Dwi Putra",
+  "ky-2": "Aulia Rahma",
+  "ky-3": "Yoga Prasetyo",
+};

@@ -2,6 +2,8 @@
 
 Portal pemilihan ketua MPK, OSIS, dan KY yang dibuat dengan Next.js. Data pemilih dan hasil suara disimpan di database SQLite pada server yang menjalankan aplikasi.
 
+Setiap organisasi menampilkan tiga pasangan calon ketua dan wakil ketua. Nama kandidat saat ini adalah nama contoh dan perlu diganti dengan data calon yang sudah disetujui sebelum pemilihan dimulai.
+
 ## Menjalankan aplikasi
 
 Pastikan Node.js versi 22.13 atau lebih baru sudah terpasang, lalu buka terminal di folder proyek dan jalankan:
@@ -16,6 +18,8 @@ Buka `http://localhost:3000`. Untuk menjalankan versi produksi, gunakan `npm run
 ## Memasukkan data siswa
 
 Siswa masuk hanya dengan NIS yang terdaftar di database. Ketik username `admin` pada halaman login untuk menampilkan kolom password dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Halaman admin menampilkan rekap jumlah suara, nama siswa beserta pilihannya, dan daftar siswa yang belum memilih untuk setiap organisasi.
+
+Admin dapat memilih **Reset** di samping pemilih untuk menghapus suara siswa pada organisasi tersebut. Tindakan ini harus dikonfirmasi, mengurangi rekap suara pasangan yang dipilih, dan mengakhiri sesi login siswa tersebut. Siswa perlu masuk kembali untuk memilih ulang. Reset dilakukan satu organisasi sekaligus.
 
 Untuk mengimpor daftar dari Excel, jalankan perintah berikut di terminal pada folder proyek (ganti alamat file sesuai lokasi workbook):
 

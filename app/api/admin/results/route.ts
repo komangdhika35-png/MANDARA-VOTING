@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { getDatabase } from "@/lib/db";
-import { candidateIds, candidateNames, organizationIds, type OrganizationId } from "@/lib/election";
+import {
+  candidateIds,
+  candidateNames,
+  candidateViceNames,
+  organizationIds,
+  type OrganizationId,
+} from "@/lib/election";
 
 export const runtime = "nodejs";
 
@@ -30,13 +36,13 @@ export async function GET() {
     );
     const voterChoiceRows = database
       .prepare(
-        `SELECT voter_choices.organization_id, voters.name, voter_choices.candidate_id
+        `SELECT voter_choices.organization_id, voters.nis, voters.name, voter_choices.candidate_id
          FROM voter_choices
          JOIN voters ON voters.nis = voter_choices.nis
          WHERE voters.active = 1
          ORDER BY voters.name COLLATE NOCASE`,
       )
-      .all() as { organization_id: string; name: string; candidate_id: string }[];
+      .all() as { organization_id: string; nis: string; name: string; candidate_id: string }[];
     const abstainerRows = database
       .prepare(
         `SELECT voters.name, participation.organization_id
@@ -52,13 +58,15 @@ export async function GET() {
       const candidates = candidateIds[id].map((candidateId) => ({
         id: candidateId,
         name: candidateNames[candidateId],
+        viceName: candidateViceNames[candidateId],
         votes: votesByCandidate.get(`${id}:${candidateId}`) ?? 0,
       }));
       const voters = voterChoiceRows
         .filter((row) => row.organization_id === id)
         .map((row) => ({
+          nis: row.nis,
           name: row.name,
-          candidateName: candidateNames[row.candidate_id as keyof typeof candidateNames],
+          candidateName: `${candidateNames[row.candidate_id]} & ${candidateViceNames[row.candidate_id]}`,
         }));
       const abstainers = abstainerRows.all(id) as { name: string }[];
 

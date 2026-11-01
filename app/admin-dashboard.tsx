@@ -7,8 +7,8 @@ type OrganizationResult = {
   name: string;
   fullName: string;
   totalVotes: number;
-  candidates: { id: string; name: string; votes: number }[];
-  voters: { name: string; candidateName: string }[];
+  candidates: { id: string; name: string; viceName: string; votes: number }[];
+  voters: { nis: string; name: string; candidateName: string }[];
   abstainers: string[];
 };
 
@@ -22,6 +22,16 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [logoutError, setLogoutError] = useState("");
+  const [resetTarget, setResetTarget] = useState<{
+    nis: string;
+    name: string;
+    candidateName: string;
+    organizationId: string;
+    organizationName: string;
+  } | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
 
   async function handleLogout() {
     setLogoutError("");
@@ -52,6 +62,39 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
       setLoading(false);
     }
   }, []);
+
+  async function resetVote() {
+    if (!resetTarget) return;
+    setResetting(true);
+    setResetError("");
+    setResetMessage("");
+    try {
+      const response = await fetch("/api/admin/reset-vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nis: resetTarget.nis,
+          organizationId: resetTarget.organizationId,
+        }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "Suara belum dapat direset.");
+
+      setResetMessage(
+        `Suara ${resetTarget.name} untuk ${resetTarget.organizationName} sudah direset. Siswa perlu masuk kembali untuk memilih ulang.`,
+      );
+      setResetTarget(null);
+      await loadResults();
+    } catch (resetFailure) {
+      setResetError(
+        resetFailure instanceof Error
+          ? resetFailure.message
+          : "Tidak dapat mereset suara. Silakan coba lagi.",
+      );
+    } finally {
+      setResetting(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -91,6 +134,8 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
 
         {logoutError && <p className="form-error app-error" role="alert">{logoutError}</p>}
         {error && <p className="form-error app-error" role="alert">{error}</p>}
+        {resetError && <p className="form-error app-error" role="alert">{resetError}</p>}
+        {resetMessage && <p className="admin-reset-notice" role="status">{resetMessage}</p>}
 
         <section className="admin-total-card" aria-live="polite">
           <span className="admin-total-icon" aria-hidden="true">✓</span>
@@ -127,7 +172,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     return (
                       <div className="result-candidate" key={candidate.id}>
                         <div className="result-candidate-copy">
-                          <span><small className="result-number">0{index + 1}</small>{candidate.name}</span>
+                          <span>
+                            <small className="result-number">0{index + 1}</small>
+                            <span className="result-team-names">
+                              <strong>{candidate.name}</strong>
+                              <small>Wakil: {candidate.viceName}</small>
+                            </span>
+                          </span>
                           <strong>{candidate.votes} <small>({percentage}%)</small></strong>
                         </div>
                         <div
@@ -148,10 +199,27 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                   <summary>Pemilih dan pilihannya ({organization.voters.length})</summary>
                   {organization.voters.length > 0 ? (
                     <ul>
-                      {organization.voters.map((voter, index) => (
-                        <li key={`${voter.name}-${index}`}>
-                          <span>{voter.name}</span>
-                          <strong>{voter.candidateName}</strong>
+                      {organization.voters.map((voter) => (
+                        <li className="admin-voter-row" key={voter.nis}>
+                          <span className="admin-voter-copy">
+                            <strong>{voter.name}</strong>
+                            <small>NIS: {voter.nis}</small>
+                            <span>{voter.candidateName}</span>
+                          </span>
+                          <button
+                            className="reset-vote-button"
+                            onClick={() => {
+                              setResetError("");
+                              setResetTarget({
+                                ...voter,
+                                organizationId: organization.id,
+                                organizationName: organization.name,
+                              });
+                            }}
+                            aria-label={`Reset suara ${voter.name} untuk ${organization.name}`}
+                          >
+                            Reset
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -172,7 +240,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                   )}
                 </details>
                 {organization.totalVotes > 0 && leader.votes > 0 && (
-                  <p className="results-leader">Suara terbanyak sementara: <strong>{leader.name}</strong></p>
+                  <p className="results-leader">
+                    Suara terbanyak sementara: <strong>{leader.name} &amp; {leader.viceName}</strong>
+                  </p>
                 )}
               </article>
             );
@@ -186,6 +256,43 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
           <span>Rekap ini diperbarui saat tombol perbarui ditekan.</span>
         </footer>
       </div>
+      {resetTarget && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !resetting) setResetTarget(null);
+        }}>
+          <section
+            className="confirmation-modal reset-vote-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-vote-title"
+          >
+            <span className="reset-vote-icon" aria-hidden="true">↺</span>
+            <span className="eyebrow dark-eyebrow">KONFIRMASI RESET SUARA</span>
+            <h2 id="reset-vote-title">Reset pilihan siswa?</h2>
+            <p>
+              Suara <strong>{resetTarget.name}</strong> untuk {resetTarget.organizationName} akan
+              dihapus dari rekap. Siswa dapat masuk kembali dan memilih ulang. NIS: {resetTarget.nis}.
+            </p>
+            {resetError && <p className="form-error reset-dialog-error" role="alert">{resetError}</p>}
+            <div className="modal-actions">
+              <button
+                className="secondary-button"
+                onClick={() => setResetTarget(null)}
+                disabled={resetting}
+              >
+                Batal
+              </button>
+              <button
+                className="primary-button reset-confirm-button"
+                onClick={() => void resetVote()}
+                disabled={resetting}
+              >
+                {resetting ? "Mereset..." : "Ya, reset suara"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

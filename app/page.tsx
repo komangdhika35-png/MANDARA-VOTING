@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OrganizationId } from "@/lib/election";
 import AdminDashboard from "@/app/admin-dashboard";
 
 type Candidate = {
   id: string;
   name: string;
+  viceName: string;
   className: string;
   number: string;
   initials: string;
@@ -35,6 +37,7 @@ const organizations: {
       {
         id: "mpk-1",
         name: "Nadia Putri",
+        viceName: "Rizky Aditya",
         className: "XI IPA 2",
         number: "01",
         initials: "NP",
@@ -45,6 +48,7 @@ const organizations: {
       {
         id: "mpk-2",
         name: "Raka Pratama",
+        viceName: "Nabila Safitri",
         className: "XI IPS 1",
         number: "02",
         initials: "RP",
@@ -55,6 +59,7 @@ const organizations: {
       {
         id: "mpk-3",
         name: "Salsabila A.",
+        viceName: "Farhan Maulana",
         className: "X IPA 3",
         number: "03",
         initials: "SA",
@@ -75,6 +80,7 @@ const organizations: {
       {
         id: "osis-1",
         name: "Dimas Saputra",
+        viceName: "Citra Lestari",
         className: "XI IPA 1",
         number: "01",
         initials: "DS",
@@ -85,6 +91,7 @@ const organizations: {
       {
         id: "osis-2",
         name: "Alya Maharani",
+        viceName: "Rafi Pratama",
         className: "XI IPS 2",
         number: "02",
         initials: "AM",
@@ -95,6 +102,7 @@ const organizations: {
       {
         id: "osis-3",
         name: "Fajar Ramadhan",
+        viceName: "Dewi Anggraini",
         className: "X IPA 2",
         number: "03",
         initials: "FR",
@@ -115,6 +123,7 @@ const organizations: {
       {
         id: "ky-1",
         name: "Keisha Anindya",
+        viceName: "Arkan Dwi Putra",
         className: "XI IPA 3",
         number: "01",
         initials: "KA",
@@ -125,6 +134,7 @@ const organizations: {
       {
         id: "ky-2",
         name: "Bagas Wicaksono",
+        viceName: "Aulia Rahma",
         className: "XI IPS 1",
         number: "02",
         initials: "BW",
@@ -135,6 +145,7 @@ const organizations: {
       {
         id: "ky-3",
         name: "Intan Permata",
+        viceName: "Yoga Prasetyo",
         className: "X IPA 1",
         number: "03",
         initials: "IP",
@@ -157,6 +168,8 @@ function toVoteRecord(organizationIds: OrganizationId[]): VoteRecord {
 export default function Home() {
   const [nis, setNis] = useState("");
   const [password, setPassword] = useState("");
+  const [adminPasswordStep, setAdminPasswordStep] = useState(false);
+  const adminPasswordRef = useRef<HTMLInputElement>(null);
   const [voter, setVoter] = useState("");
   const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [activeOrganization, setActiveOrganization] =
@@ -168,6 +181,10 @@ export default function Home() {
   const [appError, setAppError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (adminPasswordStep) adminPasswordRef.current?.focus();
+  }, [adminPasswordStep]);
 
   useEffect(() => {
     let active = true;
@@ -215,8 +232,18 @@ export default function Home() {
     event.preventDefault();
     const cleanNis = nis.trim();
     const adminLogin = cleanNis.toLocaleLowerCase("en-US") === "admin";
-    if (!cleanNis || (adminLogin && !password)) {
-      setLoginError(adminLogin ? "Password admin wajib diisi." : "NIS wajib diisi.");
+    if (!cleanNis) {
+      setLoginError("NIS wajib diisi.");
+      return;
+    }
+    if (adminLogin && !adminPasswordStep) {
+      setAdminPasswordStep(true);
+      setPassword("");
+      setLoginError("");
+      return;
+    }
+    if (adminLogin && !password) {
+      setLoginError("Password admin wajib diisi.");
       return;
     }
     setLoginError("");
@@ -244,6 +271,7 @@ export default function Home() {
       setVotes(toVoteRecord(data.votedOrganizations ?? []));
       setNis("");
       setPassword("");
+      setAdminPasswordStep(false);
     } catch (error) {
       setLoginError(
         error instanceof Error
@@ -264,6 +292,8 @@ export default function Home() {
     setVoter("");
     setRole(null);
     setVotes({});
+    setAdminPasswordStep(false);
+    setPassword("");
   }
 
   async function submitVote() {
@@ -307,12 +337,23 @@ export default function Home() {
 
   if (!role) {
     const adminLogin = nis.trim().toLocaleLowerCase("en-US") === "admin";
+    const showAdminPasswordStep = adminLogin && adminPasswordStep;
     return (
       <main className="login-page">
         <div className="login-wrap">
           <a className="brand" href="#" aria-label="Suara Mandara">
-            <span className="brand-mark"><span /></span>
-            <span className="brand-copy">suara<span>mandara</span></span>
+            <Image
+              className="login-brand-logo"
+              src="/logo-smk-negeri-bali-mandara.png"
+              alt="Lambang SMK Negeri Bali Mandara"
+              width={64}
+              height={64}
+              priority
+            />
+            <span className="login-brand-copy">
+              <strong>Suara Mandara</strong>
+              <small>SMK Negeri Bali Mandara</small>
+            </span>
           </a>
 
           <section className="login-card">
@@ -335,44 +376,46 @@ export default function Home() {
 
             <div className="login-form-panel">
               <div className="form-topline">
-                <span>{adminLogin ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
+                <span>{showAdminPasswordStep ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
                 <span className="secure-label"><span>✦</span> SUARA MANDARA</span>
               </div>
               <div className="form-heading">
-                <span className="form-icon">↗</span>
-                <p>{adminLogin ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
-                <h2>{adminLogin ? <>Lihat hasil<br />pemilihan.</> : <>Mulai dari<br />suaramu.</>}</h2>
+                <span className="form-icon">{showAdminPasswordStep ? "▣" : "↗"}</span>
+                <p>{showAdminPasswordStep ? "Selamat datang, admin!" : adminLogin ? "Akses khusus pengelola" : "Selamat datang, pemilih!"}</p>
+                <h2>
+                  {showAdminPasswordStep ? <>Masukkan password<br />admin.</> : adminLogin ? <>Lanjutkan ke<br />halaman admin.</> : <>Mulai dari<br />suaramu.</>}
+                </h2>
                 <span className="form-subtitle">
-                  {adminLogin ? "Masukkan password admin untuk membuka rekap suara." : "Masukkan NIS untuk melanjutkan pemilihan."}
+                  {showAdminPasswordStep
+                    ? "Masukkan password untuk membuka rekap suara."
+                    : adminLogin
+                      ? "Tekan masuk untuk melanjutkan ke halaman password admin."
+                      : "Masukkan NIS untuk melanjutkan pemilihan."}
                 </span>
               </div>
               <form className="login-form" onSubmit={handleLogin}>
-                <label htmlFor="nis">{adminLogin ? "Username admin" : "Nomor Induk Siswa (NIS)"}</label>
-                <div className="input-wrap">
-                  <span className="input-icon nis-icon" aria-hidden="true">#</span>
-                  <input
-                    id="nis"
-                    name="nis"
-                    type="text"
-                    inputMode="text"
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    placeholder={adminLogin ? "admin" : "Masukkan NIS kamu"}
-                    value={nis}
-                    onChange={(event) => {
-                      setNis(event.target.value);
-                      setLoginError("");
-                      setPassword("");
-                    }}
-                    required
-                  />
-                </div>
-                {adminLogin && (
+                {showAdminPasswordStep ? (
                   <>
+                    <div className="admin-account">
+                      <span className="admin-account-avatar">A</span>
+                      <span><strong>admin</strong><small>Masuk sebagai pengelola</small></span>
+                      <button
+                        type="button"
+                        className="change-admin-button"
+                        onClick={() => {
+                          setAdminPasswordStep(false);
+                          setPassword("");
+                          setLoginError("");
+                        }}
+                      >
+                        Kembali
+                      </button>
+                    </div>
                     <label htmlFor="admin-password">Password admin</label>
                     <div className="input-wrap">
                       <span className="input-icon lock-icon" aria-hidden="true">▣</span>
                       <input
+                        ref={adminPasswordRef}
                         id="admin-password"
                         name="password"
                         type="password"
@@ -384,11 +427,41 @@ export default function Home() {
                       />
                     </div>
                   </>
+                ) : (
+                  <>
+                    <label htmlFor="nis">{adminLogin ? "Username admin" : "Nomor Induk Siswa (NIS)"}</label>
+                    <div className="input-wrap">
+                      <span className="input-icon nis-icon" aria-hidden="true">#</span>
+                      <input
+                        id="nis"
+                        name="nis"
+                        type="text"
+                        inputMode="text"
+                        autoCapitalize="none"
+                        autoComplete="off"
+                        placeholder={adminLogin ? "admin" : "Masukkan NIS kamu"}
+                        value={nis}
+                        onChange={(event) => {
+                          setNis(event.target.value);
+                          setAdminPasswordStep(false);
+                          setLoginError("");
+                          setPassword("");
+                        }}
+                        required
+                      />
+                    </div>
+                  </>
                 )}
                 {loginError && <p className="form-error" role="alert">{loginError}</p>}
                 {appError && <p className="form-error" role="alert">{appError}</p>}
                 <button className="primary-button login-button" type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Memeriksa data..." : adminLogin ? "Lihat rekap suara" : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
+                  {isSubmitting
+                    ? "Memeriksa data..."
+                    : showAdminPasswordStep
+                      ? "Masuk ke halaman admin"
+                      : adminLogin
+                        ? "Masuk"
+                        : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
                 </button>
               </form>
               <p className="login-hint"><span>✳</span> {adminLogin ? "Khusus admin sekolah." : "Gunakan NIS yang terdaftar sebagai pemilih."}</p>
@@ -467,7 +540,7 @@ export default function Home() {
             <div className="sidebar-note">
               <span className="note-star">✳</span>
               <strong>Ingat, ya!</strong>
-              <p>Pilihanmu bersifat rahasia. Pilih dengan hati dan pikiran terbuka.</p>
+              <p>Admin dapat melihat pilihan setiap siswa. Pilih dengan hati dan pikiran terbuka.</p>
             </div>
             <div className="sidebar-decoration" aria-hidden="true"><span>✳</span><span>✳</span><span>·</span></div>
           </aside>
@@ -479,7 +552,7 @@ export default function Home() {
                 <h2>{currentOrganization.fullName}</h2>
                 <p>{currentOrganization.description}</p>
               </div>
-              <span className="candidate-count">03 <span>KANDIDAT</span></span>
+              <span className="candidate-count">03 <span>PASLON</span></span>
             </div>
             {votes[activeOrganization] ? (
               <div className="already-voted">
@@ -503,15 +576,19 @@ export default function Home() {
                       onClick={() => setSelectedCandidate(candidate.id)}
                       aria-pressed={selectedCandidate === candidate.id}
                     >
-                      <span className="candidate-number">KANDIDAT <strong>{candidate.number}</strong></span>
+                      <span className="candidate-number">PASLON <strong>{candidate.number}</strong></span>
                       <span className={`candidate-photo ${candidate.color}`}>
                         <span className="portrait-initials">{candidate.initials}</span>
                         <span className="photo-spark">✳</span>
                         <span className="photo-orbit" />
                       </span>
                       <span className="candidate-info">
+                        <span className="candidate-role">Calon ketua</span>
                         <strong className="candidate-name">{candidate.name}</strong>
                         <span className="candidate-class">{candidate.className}</span>
+                        <span className="candidate-vice-divider" />
+                        <span className="candidate-role">Calon wakil ketua</span>
+                        <strong className="candidate-vice-name">{candidate.viceName}</strong>
                         <span className="candidate-program">{candidate.program}</span>
                       </span>
                       <span className="candidate-motto">“{candidate.motto}”</span>
@@ -520,7 +597,7 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="voting-action">
-                  <span><span className="small-lock">▣</span> Pilihanmu bersifat rahasia dan tidak dapat diubah.</span>
+                  <span><span className="small-lock">▣</span> Pilihanmu tercatat dan tidak dapat diubah.</span>
                   <button
                     className="primary-button vote-button"
                     disabled={!selectedCandidate}
@@ -544,7 +621,9 @@ export default function Home() {
             <span className={`modal-candidate-avatar ${selectedCandidateDetails.color}`}>{selectedCandidateDetails.initials}</span>
             <span className="eyebrow dark-eyebrow">KONFIRMASI PILIHAN</span>
             <h2 id="confirm-title">Sudah yakin dengan pilihanmu?</h2>
-            <p>Kamu memilih <strong>{selectedCandidateDetails.name}</strong> sebagai ketua {currentOrganization.name}. Setelah dikirim, pilihan tidak bisa diubah.</p>
+            <p>
+              Kamu memilih pasangan <strong>{selectedCandidateDetails.name} dan {selectedCandidateDetails.viceName}</strong> sebagai calon ketua dan wakil ketua {currentOrganization.name}. Setelah dikirim, pilihan tidak bisa diubah.
+            </p>
             <div className="modal-actions">
               <button className="secondary-button" onClick={() => setShowConfirmation(false)}>Lihat lagi</button>
               <button className="primary-button" onClick={submitVote} disabled={isSubmitting}>

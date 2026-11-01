@@ -181,6 +181,143 @@ a { color: inherit; text-decoration: none; }
     radial-gradient(ellipse at 96% 8%, rgba(245, 196, 199, .35), transparent 31%),
     linear-gradient(135deg, #fff 15%, #fffafa 65%, #fff4f5);
 }
+.login-wrap > .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 19px 5px;
+}
+.login-brand-logo {
+  width: 58px;
+  height: 58px;
+  padding: 3px;
+  border: 1px solid rgba(164, 119, 43, .48);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(111, 32, 39, .12);
+  object-fit: contain;
+}
+.login-brand-copy strong,
+.login-brand-copy small {
+  display: block;
+}
+.login-brand-copy strong {
+  color: #7d242b;
+  font: 800 19px "Manrope", sans-serif;
+  letter-spacing: -.6px;
+}
+.login-brand-copy small {
+  margin-top: 3px;
+  color: #96734a;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .45px;
+}
+.admin-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 10px;
+  border: 1px solid #f0e2e0;
+  border-radius: 8px;
+  background: #fffafa;
+}
+.admin-account-avatar {
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #fff8e6;
+  background: linear-gradient(145deg, #8f282e, #c44a46);
+  font-size: 12px;
+  font-weight: 700;
+}
+.admin-account > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.admin-account strong,
+.admin-account small {
+  display: block;
+}
+.admin-account strong {
+  color: #57383a;
+  font-size: 10px;
+}
+.admin-account small {
+  margin-top: 3px;
+  color: #9c8583;
+  font-size: 8px;
+}
+.change-admin-button {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 5px;
+  color: #a13740;
+  background: #f9e9e9;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.change-admin-button:hover {
+  background: #f3d9db;
+}
+.candidate-role {
+  color: #a17d80;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .35px;
+  text-transform: uppercase;
+}
+.candidate-info .candidate-name {
+  margin-top: 2px;
+}
+.candidate-vice-divider {
+  width: 100%;
+  height: 1px;
+  margin: 6px 0;
+  background: #f0eeea;
+}
+.candidate-vice-name {
+  margin-top: 2px;
+  color: #62484a;
+  font: 700 10px "Manrope", sans-serif;
+  letter-spacing: -.2px;
+}
+.result-team-names strong,
+.result-team-names small {
+  display: block;
+}
+.result-team-names strong {
+  color: #536157;
+  font-size: 9px;
+  font-weight: 600;
+}
+.result-team-names small {
+  margin-top: 2px;
+  color: #939b92;
+  font-size: 8px;
+  font-weight: 400;
+}
+@media (max-width: 760px) {
+  .login-wrap > .brand {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .login-brand-logo {
+    width: 52px;
+    height: 52px;
+  }
+  .login-brand-copy strong {
+    font-size: 17px;
+  }
+  .candidate-info {
+    min-height: 0;
+  }
+}
 .login-wrap { width: min(1054px, 100%); }
 .brand-mark { background: #c93246; }
 .brand-mark > span { border-color: #fff; }
@@ -442,6 +579,23 @@ a { color: inherit; text-decoration: none; }
 .voter-details li span { display: block; }
 .voter-details li strong { display: block; color: #a93646; font-size: 8px; font-weight: 600; }
 .voter-details p { margin: 9px 0 0; color: #929a91; }
+.voter-details .admin-voter-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f4f1ed; list-style: none; }
+.admin-voter-copy { min-width: 0; overflow-wrap: anywhere; }
+.voter-details .admin-voter-copy > strong { color: #566259; font-size: 9px; }
+.admin-voter-copy small { display: block; margin-top: 2px; color: #929a91; font-size: 8px; }
+.voter-details .admin-voter-copy > span { margin-top: 2px; color: #a93646; font-size: 8px; }
+.reset-vote-button { flex: 0 0 auto; padding: 5px 8px; border: 1px solid #f0d7d9; border-radius: 5px; color: #ae3443; background: #fff7f7; font-size: 8px; font-weight: 700; cursor: pointer; }
+.reset-vote-button:hover { border-color: #dfabb0; background: #ffeff0; }
+.reset-vote-button:disabled { opacity: .6; cursor: wait; }
+.admin-reset-notice { margin: 12px 0; padding: 10px 12px; border: 1px solid #dce9ce; border-radius: 7px; color: #4a693c; background: #f5faef; font-size: 10px; line-height: 1.6; }
+.reset-vote-icon { width: 42px; height: 42px; display: grid; place-items: center; margin: 0 auto 13px; border-radius: 50%; color: #a93646; background: #fff0f1; font-size: 25px; }
+.reset-vote-modal > p { max-width: 350px; }
+.reset-vote-modal > p strong { color: #a93646; }
+.reset-dialog-error { margin: 12px 0 0; }
+.reset-confirm-button { background: #b83243; }
+.reset-confirm-button:hover:not(:disabled) { background: #9e2939; }
+.reset-confirm-button:disabled { opacity: .65; cursor: wait; }
+.modal-actions button:disabled { opacity: .65; cursor: wait; }
 .abstainer-details li { color: #795a2d; }
 .results-empty { padding: 20px; color: #889188; font-size: 11px; text-align: center; }
 .admin-footer { margin-top: 22px; }
