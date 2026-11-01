@@ -6,6 +6,14 @@ CREATE TABLE IF NOT EXISTS voters (
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
 );
 
+CREATE TABLE IF NOT EXISTS voter_ids (
+  identifier TEXT PRIMARY KEY NOT NULL,
+  nis TEXT NOT NULL REFERENCES voters(nis) ON DELETE CASCADE
+);
+
+INSERT OR IGNORE INTO voter_ids (identifier, nis)
+SELECT nis, nis FROM voters;
+
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY NOT NULL,
   nis TEXT NOT NULL REFERENCES voters(nis) ON DELETE CASCADE,
@@ -24,6 +32,14 @@ CREATE INDEX IF NOT EXISTS admin_sessions_expires_at ON admin_sessions(expires_a
 CREATE TABLE IF NOT EXISTS participation (
   nis TEXT NOT NULL REFERENCES voters(nis),
   organization_id TEXT NOT NULL CHECK (organization_id IN ('mpk', 'osis', 'ky')),
+  voted_at INTEGER NOT NULL,
+  PRIMARY KEY (nis, organization_id)
+);
+
+CREATE TABLE IF NOT EXISTS voter_choices (
+  nis TEXT NOT NULL REFERENCES voters(nis),
+  organization_id TEXT NOT NULL CHECK (organization_id IN ('mpk', 'osis', 'ky')),
+  candidate_id TEXT NOT NULL,
   voted_at INTEGER NOT NULL,
   PRIMARY KEY (nis, organization_id)
 );

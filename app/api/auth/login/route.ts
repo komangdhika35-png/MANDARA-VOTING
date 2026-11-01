@@ -57,7 +57,12 @@ export async function POST(request: Request) {
     }
 
     const voter = getDatabase()
-      .prepare("SELECT nis, name FROM voters WHERE nis = ? AND active = 1")
+      .prepare(
+        `SELECT voters.nis, voters.name
+         FROM voter_ids
+         JOIN voters ON voters.nis = voter_ids.nis
+         WHERE voter_ids.identifier = ? AND voters.active = 1`,
+      )
       .get(nis) as { nis: string; name: string } | undefined;
 
     if (!voter) {

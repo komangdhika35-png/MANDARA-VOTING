@@ -8,6 +8,8 @@ type OrganizationResult = {
   fullName: string;
   totalVotes: number;
   candidates: { id: string; name: string; votes: number }[];
+  voters: { name: string; candidateName: string }[];
+  abstainers: string[];
 };
 
 type Results = {
@@ -95,6 +97,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
           <span><small>TOTAL SUARA TERCATAT</small><strong>{loading && !results ? "—" : results?.totalVotes ?? 0}</strong></span>
           <span className="admin-total-caption">Data diambil langsung dari database SQLite</span>
         </section>
+        <p className="admin-privacy-notice" role="note">
+          Privasi: halaman ini menampilkan nama siswa beserta pilihannya. Batasi akses halaman ini hanya untuk admin.
+        </p>
 
         <section className="results-grid" aria-label="Rekap suara tiap organisasi">
           {results?.organizations.map((organization) => {
@@ -139,6 +144,33 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     );
                   })}
                 </div>
+                <details className="voter-details">
+                  <summary>Pemilih dan pilihannya ({organization.voters.length})</summary>
+                  {organization.voters.length > 0 ? (
+                    <ul>
+                      {organization.voters.map((voter, index) => (
+                        <li key={`${voter.name}-${index}`}>
+                          <span>{voter.name}</span>
+                          <strong>{voter.candidateName}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Belum ada siswa yang memilih.</p>
+                  )}
+                </details>
+                <details className="voter-details abstainer-details">
+                  <summary>Belum memilih / golput ({organization.abstainers.length})</summary>
+                  {organization.abstainers.length > 0 ? (
+                    <ul>
+                      {organization.abstainers.map((name, index) => (
+                        <li key={`${name}-${index}`}>{name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Semua pemilih terdaftar sudah memilih.</p>
+                  )}
+                </details>
                 {organization.totalVotes > 0 && leader.votes > 0 && (
                   <p className="results-leader">Suara terbanyak sementara: <strong>{leader.name}</strong></p>
                 )}

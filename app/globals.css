@@ -406,6 +406,7 @@ a { color: inherit; text-decoration: none; }
 .admin-total-card small { color: #9a8587; font-size: 8px; font-weight: 700; letter-spacing: .8px; }
 .admin-total-card strong { margin-top: 5px; color: #342b2c; font: 800 25px "Nunito", sans-serif; }
 .admin-total-caption { margin-left: auto; color: #9a8c8d; font-size: 9px; }
+.admin-privacy-notice { margin: 11px 0 0; padding: 10px 12px; border: 1px solid #f1e2c6; border-radius: 8px; color: #795a2d; background: #fffaf0; font-size: 9px; line-height: 1.55; }
 .results-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-top: 17px; }
 .results-card {
   min-width: 0;
@@ -434,6 +435,14 @@ a { color: inherit; text-decoration: none; }
 .result-track > span { display: block; height: 100%; min-width: 0; border-radius: inherit; background: linear-gradient(90deg, #cf4253, #e8999f); transition: width .3s ease; }
 .results-leader { margin: 16px 0 0; padding-top: 11px; border-top: 1px solid #f1f0eb; color: #90978e; font-size: 8px; }
 .results-leader strong { color: #665155; font-weight: 700; }
+.voter-details { margin-top: 13px; border-top: 1px solid #f1f0eb; color: #566259; font-size: 9px; }
+.voter-details summary { padding: 11px 0 0; color: #566259; font-weight: 700; cursor: pointer; }
+.voter-details ul { display: grid; gap: 7px; max-height: 210px; overflow-y: auto; margin: 10px 0 0; padding: 0 2px 0 14px; }
+.voter-details li { padding-left: 1px; line-height: 1.45; }
+.voter-details li span { display: block; }
+.voter-details li strong { display: block; color: #a93646; font-size: 8px; font-weight: 600; }
+.voter-details p { margin: 9px 0 0; color: #929a91; }
+.abstainer-details li { color: #795a2d; }
 .results-empty { padding: 20px; color: #889188; font-size: 11px; text-align: center; }
 .admin-footer { margin-top: 22px; }
 @media (max-width: 760px) {

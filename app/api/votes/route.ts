@@ -61,6 +61,11 @@ export async function POST(request: Request) {
       .run(voter.nis, organizationId, now);
     database
       .prepare(
+        "INSERT INTO voter_choices (nis, organization_id, candidate_id, voted_at) VALUES (?, ?, ?, ?)",
+      )
+      .run(voter.nis, organizationId, body.candidateId, now);
+    database
+      .prepare(
         "INSERT INTO ballots (ballot_id, organization_id, candidate_id, cast_at) VALUES (?, ?, ?, ?)",
       )
       .run(randomUUID(), organizationId, body.candidateId, now);

@@ -15,7 +15,15 @@ Buka `http://localhost:3000`. Untuk menjalankan versi produksi, gunakan `npm run
 
 ## Memasukkan data siswa
 
-Siswa masuk hanya dengan NIS yang terdaftar di database. Ketik username `admin` pada halaman login untuk menampilkan kolom password dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Beranda admin menampilkan rekap jumlah suara tiap kandidat di organisasi MPK, OSIS, dan KY. Siapkan daftar siswa dalam format CSV dengan dua kolom `nis` dan `nama`. Contohnya:
+Siswa masuk hanya dengan NIS yang terdaftar di database. Ketik username `admin` pada halaman login untuk menampilkan kolom password dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Halaman admin menampilkan rekap jumlah suara, nama siswa beserta pilihannya, dan daftar siswa yang belum memilih untuk setiap organisasi.
+
+Untuk mengimpor daftar dari Excel, jalankan perintah berikut di terminal pada folder proyek (ganti alamat file sesuai lokasi workbook):
+
+```bash
+npm run import:siswa -- "C:\Users\Nama\Downloads\daftar-siswa.xlsx"
+```
+
+Importer membaca lembar yang memiliki kolom `NISN/NIS` dan `NAMA SISWA`. Untuk mencoba tanpa mengubah database, tambahkan `--dry-run` sebelum alamat file. Jika workbook Excel belum tersedia, daftar CSV dengan dua kolom `nis` dan `nama` juga bisa digunakan. Contohnya:
 
 ```csv
 nis,nama
@@ -35,7 +43,7 @@ Database otomatis dibuat di `.data/suara-mandara.sqlite`. Folder `.data` tidak d
 
 ## Penyimpanan suara dan batas penggunaan
 
-SQLite menyimpan data siswa, sesi login, partisipasi pemilih, dan surat suara secara lokal pada disk server. Satu NIS hanya dapat memilih satu kali untuk setiap organisasi. Surat suara tidak menyimpan NIS bersama pilihan kandidat.
+SQLite menyimpan data siswa, sesi login, partisipasi pemilih, dan surat suara secara lokal pada disk server. Satu NIS hanya dapat memilih satu kali untuk setiap organisasi. Admin dapat melihat nama pemilih dan kandidat yang dipilih, sehingga pemungutan suara ini **tidak bersifat rahasia**. Batasi akses admin dan jangan gunakan fitur tersebut untuk pemilihan resmi yang mensyaratkan kerahasiaan suara.
 
 SQLite sesuai untuk aplikasi yang dijalankan pada satu komputer/server dengan penyimpanan disk persisten. Jangan menjalankan beberapa salinan aplikasi dengan file database lokal terpisah, dan jangan mengandalkan filesystem sementara pada layanan hosting. Untuk pemilihan resmi atau aplikasi yang perlu diakses luas, sekolah perlu menyiapkan server persisten, backup, pengamanan data, dan prosedur audit terlebih dahulu. Nama kandidat dalam aplikasi masih berupa data contoh.
 
