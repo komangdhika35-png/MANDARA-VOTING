@@ -146,12 +146,13 @@ const organizations: {
 ];
 
 const STORAGE_KEY = "suara-kita-demo-votes";
+const VOTER_SESSION_KEY = "suara-mandara-voter";
 
 type VoteRecord = Partial<Record<OrganizationId, string>>;
 
 export default function Home() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [nis, setNis] = useState("");
   const [voter, setVoter] = useState("");
   const [activeOrganization, setActiveOrganization] =
     useState<OrganizationId>("mpk");
@@ -168,7 +169,7 @@ export default function Home() {
       try {
         const savedVotes = localStorage.getItem(STORAGE_KEY);
         if (savedVotes) setVotes(JSON.parse(savedVotes) as VoteRecord);
-        setVoter(sessionStorage.getItem("suara-kita-voter") ?? "");
+        setVoter(sessionStorage.getItem(VOTER_SESSION_KEY) ?? "");
       } catch (error) {
         console.error("Gagal memuat data simulasi pemilihan:", error);
       } finally {
@@ -189,19 +190,20 @@ export default function Home() {
 
   function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const cleanUsername = username.trim();
-    if (!cleanUsername || !password) {
-      setLoginError("Username dan password wajib diisi.");
+    const cleanName = name.trim();
+    const cleanNis = nis.trim();
+    if (!cleanName || !cleanNis) {
+      setLoginError("Nama dan NIS wajib diisi.");
       return;
     }
     setLoginError("");
-    setVoter(cleanUsername);
-    sessionStorage.setItem("suara-kita-voter", cleanUsername);
-    setPassword("");
+    setVoter(cleanName);
+    sessionStorage.setItem(VOTER_SESSION_KEY, cleanName);
+    setNis("");
   }
 
   function handleLogout() {
-    sessionStorage.removeItem("suara-kita-voter");
+    sessionStorage.removeItem(VOTER_SESSION_KEY);
     setVoter("");
   }
 
@@ -228,17 +230,17 @@ export default function Home() {
     return (
       <main className="login-page">
         <div className="login-wrap">
-          <a className="brand" href="#" aria-label="Suara Kita">
+          <a className="brand" href="#" aria-label="Suara Mandara">
             <span className="brand-mark"><span /></span>
-            <span className="brand-copy">suara<span>kita</span></span>
+            <span className="brand-copy">suara<span>mandara</span></span>
           </a>
 
           <section className="login-card">
             <div className="login-visual">
               <span className="eyebrow"><span className="live-dot" /> PEMILIHAN SISWA 2026/2027</span>
               <div className="visual-heading">
-                <h1>Suaramu,<br />masa depan<br /><span>kita.</span></h1>
-                <p>Satu suara kecil bisa membawa perubahan besar untuk sekolah kita.</p>
+                <h1>AYO PILIH<br />SESUAI ISI<br /><span>HATIMU</span></h1>
+                <p>Setiap pilihan punya arti. Yuk, tentukan pemimpin yang paling mewakili harapanmu.</p>
               </div>
               <div className="visual-bottom">
                 <div className="orbit orbit-one" />
@@ -246,7 +248,7 @@ export default function Home() {
                 <div className="orbit orbit-three" />
                 <span className="orbit-star star-one">✳</span>
                 <span className="orbit-star star-two">✳</span>
-                <div className="vote-stamp"><span>01</span><span>SUARA<br />KAMU</span></div>
+                <div className="vote-stamp"><span>01</span><span>SUARA<br />MANDARA</span></div>
                 <div className="candidate-avatars" aria-hidden="true">
                   <span className="avatar avatar-one">NP</span>
                   <span className="avatar avatar-two">DS</span>
@@ -264,36 +266,37 @@ export default function Home() {
               </div>
               <div className="form-heading">
                 <span className="form-icon">↗</span>
-                <p>Halo, pemilih!</p>
-                <h2>Siap menentukan<br />pilihanmu?</h2>
-                <span className="form-subtitle">Masuk dulu, yuk. Masa depan sekolah dimulai di sini.</span>
+                <p>Selamat datang, pemilih!</p>
+                <h2>Mulai dari<br />suaramu.</h2>
+                <span className="form-subtitle">Isi nama dan NIS untuk melanjutkan pemilihan.</span>
               </div>
               <form className="login-form" onSubmit={handleLogin}>
-                <label htmlFor="username">Username</label>
+                <label htmlFor="name">Nama lengkap</label>
                 <div className="input-wrap">
                   <span className="input-icon" aria-hidden="true">♙</span>
                   <input
-                    id="username"
-                    name="username"
+                    id="name"
+                    name="name"
                     type="text"
-                    autoComplete="username"
-                    placeholder="Masukkan username kamu"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
+                    autoComplete="name"
+                    placeholder="Masukkan nama lengkap"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
                     required
                   />
                 </div>
-                <label htmlFor="password">Password</label>
+                <label htmlFor="nis">Nomor Induk Siswa (NIS)</label>
                 <div className="input-wrap">
-                  <span className="input-icon lock-icon" aria-hidden="true">▣</span>
+                  <span className="input-icon nis-icon" aria-hidden="true">#</span>
                   <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    id="nis"
+                    name="nis"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Masukkan NIS kamu"
+                    value={nis}
+                    onChange={(event) => setNis(event.target.value)}
                     required
                   />
                 </div>
@@ -302,12 +305,12 @@ export default function Home() {
                   Masuk &amp; mulai memilih <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <p className="login-hint"><span>✳</span> Gunakan akun pemilih yang diberikan oleh sekolahmu.</p>
-              <p className="demo-notice">Mode demo: formulir dapat dicoba tanpa akun backend.</p>
-              <div className="login-footer"><span>© 2026 Suara Kita</span><span>Dibuat untuk perubahan yang baik <span className="heart">♥</span></span></div>
+              <p className="login-hint"><span>✳</span> Pastikan nama dan NIS sesuai dengan data siswa.</p>
+              <p className="demo-notice">Mode demo: NIS belum diverifikasi oleh sistem sekolah.</p>
+              <div className="login-footer"><span>© 2026 Suara Mandara</span><span>Suaramu berarti <span className="heart">♥</span></span></div>
             </div>
           </section>
-          <div className="login-bottom-note"><span className="tiny-spark">✳</span> SATU SISWA, SATU SUARA, SATU PERUBAHAN.</div>
+          <div className="login-bottom-note"><span className="tiny-spark">✳</span> SATU SISWA, SATU SUARA, SATU MANDARA.</div>
         </div>
       </main>
     );
@@ -316,9 +319,9 @@ export default function Home() {
   return (
     <main className="app-page">
       <header className="app-header">
-        <a className="brand" href="#" aria-label="Suara Kita">
+        <a className="brand" href="#" aria-label="Suara Mandara">
           <span className="brand-mark"><span /></span>
-          <span className="brand-copy">suara<span>kita</span></span>
+          <span className="brand-copy">suara<span>mandara</span></span>
         </a>
         <span className="header-election"><span className="live-dot" /> PEMILIHAN SISWA 2026/2027</span>
         <button className="profile-button" onClick={handleLogout} title="Keluar">
@@ -433,7 +436,7 @@ export default function Home() {
             )}
           </section>
         </div>
-        <footer className="app-footer"><span>© 2026 SUARA KITA</span><span>Satu siswa, satu suara, satu perubahan. <span className="heart">♥</span></span></footer>
+        <footer className="app-footer"><span>© 2026 SUARA MANDARA</span><span>Satu siswa, satu suara, satu perubahan. <span className="heart">♥</span></span></footer>
         <p className="demo-footer-note">Prototipe demo — data pemilihan tersimpan hanya di browser ini dan bukan suara resmi.</p>
       </div>
 

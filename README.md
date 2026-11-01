@@ -1,6 +1,6 @@
-# Suara Kita
+# Suara Mandara
 
-Prototipe portal pemilihan ketua MPK, OSIS, dan KY yang dibuat dengan Next.js.
+Prototipe portal pemilihan ketua MPK, OSIS, dan KY di Mandara yang dibuat dengan Next.js.
 
 ## Menjalankan aplikasi
 
@@ -15,4 +15,4 @@ Buka `http://localhost:3000`. Untuk membuat build produksi, jalankan `npm run bu
 
 ## Catatan prototipe
 
-Login saat ini hanya memeriksa bahwa username dan password terisi; belum ada autentikasi akun sekolah. Data kandidat adalah contoh. Suara simulasi disimpan di `localStorage` browser dan sesi login di `sessionStorage`. Implementasi ini **bukan sistem pemilihan resmi**: sebelum digunakan sungguhan, diperlukan backend, autentikasi dan otorisasi pemilih, database, serta penyimpanan suara yang aman dan dapat diaudit.
+Login saat ini hanya memeriksa bahwa nama dan NIS terisi; NIS belum diverifikasi dan belum ada autentikasi akun sekolah. Data kandidat adalah contoh. Suara simulasi disimpan di `localStorage` browser dan nama pemilih di `sessionStorage`. Implementasi ini **bukan sistem pemilihan resmi**: sebelum digunakan sungguhan, diperlukan backend, autentikasi dan otorisasi pemilih, database, serta penyimpanan suara yang aman dan dapat diaudit.
