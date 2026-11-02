@@ -336,8 +336,8 @@ export default function Home() {
   if (!ready) return <main className="loading-screen" aria-label="Memuat aplikasi" />;
 
   if (!role) {
-    const adminLogin = nis.trim().toLocaleLowerCase("en-US") === "admin";
-    const showAdminPasswordStep = adminLogin && adminPasswordStep;
+    const showAdminPasswordStep =
+      nis.trim().toLocaleLowerCase("en-US") === "admin" && adminPasswordStep;
     return (
       <main className="login-page">
         <div className="login-wrap">
@@ -381,16 +381,14 @@ export default function Home() {
               </div>
               <div className="form-heading">
                 <span className="form-icon">{showAdminPasswordStep ? "▣" : "↗"}</span>
-                <p>{showAdminPasswordStep ? "Selamat datang, admin!" : adminLogin ? "Akses khusus pengelola" : "Selamat datang, pemilih!"}</p>
+                <p>{showAdminPasswordStep ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
                 <h2>
-                  {showAdminPasswordStep ? <>Masukkan password<br />admin.</> : adminLogin ? <>Lanjutkan ke<br />halaman admin.</> : <>Mulai dari<br />suaramu.</>}
+                  {showAdminPasswordStep ? <>Masukkan password<br />admin.</> : <>Mulai dari<br />suaramu.</>}
                 </h2>
                 <span className="form-subtitle">
                   {showAdminPasswordStep
                     ? "Masukkan password untuk membuka rekap suara."
-                    : adminLogin
-                      ? "Tekan masuk untuk melanjutkan ke halaman password admin."
-                      : "Masukkan NIS untuk melanjutkan pemilihan."}
+                    : "Masukkan NIS untuk melanjutkan pemilihan."}
                 </span>
               </div>
               <form className="login-form" onSubmit={handleLogin}>
@@ -429,7 +427,7 @@ export default function Home() {
                   </>
                 ) : (
                   <>
-                    <label htmlFor="nis">{adminLogin ? "Username admin" : "Nomor Induk Siswa (NIS)"}</label>
+                    <label htmlFor="nis">Nomor Induk Siswa (NIS)</label>
                     <div className="input-wrap">
                       <span className="input-icon nis-icon" aria-hidden="true">#</span>
                       <input
@@ -439,7 +437,7 @@ export default function Home() {
                         inputMode="text"
                         autoCapitalize="none"
                         autoComplete="off"
-                        placeholder={adminLogin ? "admin" : "Masukkan NIS kamu"}
+                        placeholder="Masukkan NIS kamu"
                         value={nis}
                         onChange={(event) => {
                           setNis(event.target.value);
@@ -459,12 +457,10 @@ export default function Home() {
                     ? "Memeriksa data..."
                     : showAdminPasswordStep
                       ? "Masuk ke halaman admin"
-                      : adminLogin
-                        ? "Masuk"
-                        : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
+                      : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <p className="login-hint"><span>✳</span> {adminLogin ? "Khusus admin sekolah." : "Gunakan hak pilihmu dengan bijak untuk menentukan pemimpin organisasi kesiswaan."}</p>
+              <p className="login-hint"><span>✳</span> Gunakan hak pilihmu dengan bijak untuk menentukan pemimpin organisasi kesiswaan.</p>
               <p className="demo-notice">Setiap suara berharga. Pilih calon yang paling mewakili aspirasi siswa.</p>
               <div className="login-footer"><span>© 2026 Suara Mandara</span><span>Suaramu berarti <span className="heart">♥</span></span></div>
             </div>
