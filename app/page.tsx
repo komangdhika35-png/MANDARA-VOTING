@@ -370,7 +370,7 @@ export default function Home() {
                   <span className="election-note-icon" aria-hidden="true">✓</span>
                   <span><strong>Satu suara berarti</strong><small>MPK&nbsp; · &nbsp;OSIS&nbsp; · &nbsp;KY</small></span>
                 </div>
-                <span className="visual-footnote">PEMILIHAN ORGANISASI SISWA</span>
+                <span className="visual-footnote">PEMILIHAN ORGANISASI KESISWAAN SEKOLAH</span>
               </div>
             </div>
 
@@ -464,8 +464,8 @@ export default function Home() {
                         : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <p className="login-hint"><span>✳</span> {adminLogin ? "Khusus admin sekolah." : "Gunakan NIS yang terdaftar sebagai pemilih."}</p>
-              <p className="demo-notice">Data siswa dan suara tersimpan di database SQLite sekolah.</p>
+              <p className="login-hint"><span>✳</span> {adminLogin ? "Khusus admin sekolah." : "Gunakan hak pilihmu dengan bijak untuk menentukan pemimpin organisasi kesiswaan."}</p>
+              <p className="demo-notice">Setiap suara berharga. Pilih calon yang paling mewakili aspirasi siswa.</p>
               <div className="login-footer"><span>© 2026 Suara Mandara</span><span>Suaramu berarti <span className="heart">♥</span></span></div>
             </div>
           </section>
