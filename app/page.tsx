@@ -333,14 +333,14 @@ export default function Home() {
     (candidate) => candidate.id === selectedCandidate,
   );
 
-  if (!ready) return <main className="loading-screen" aria-label="Memuat aplikasi" />;
+  if (!ready) return <main className="min-h-screen bg-paper" aria-label="Memuat aplikasi" />;
 
   if (!role) {
     const showAdminPasswordStep =
       nis.trim().toLocaleLowerCase("en-US") === "admin" && adminPasswordStep;
     return (
-      <main className="login-page">
-        <div className="login-wrap">
+      <main className="grid min-h-screen place-items-center bg-[radial-gradient(ellipse_at_5%_90%,rgba(226,58,76,.09),transparent_34%),radial-gradient(ellipse_at_96%_8%,rgba(245,196,199,.35),transparent_31%),linear-gradient(135deg,#fff_15%,#fffafa_65%,#fff4f5)] px-6 pt-[38px] pb-[26px] motion-safe:animate-rise-in max-[760px]:px-[18px] max-[760px]:py-6 max-[420px]:px-3">
+        <div className="w-[min(1054px,100%)]">
           <a className="brand" href="#" aria-label="Suara Mandara">
             <Image
               className="login-brand-logo"
@@ -356,30 +356,30 @@ export default function Home() {
             </span>
           </a>
 
-          <section className="login-card">
-            <div className="login-visual">
+          <section className="grid min-h-[610px] grid-cols-[1.04fr_.96fr] overflow-hidden rounded-[17px] border border-[rgba(218,74,91,.1)] bg-white shadow-[0_24px_72px_rgba(109,41,47,.09),0_2px_8px_rgba(109,41,47,.035)] max-[760px]:mx-auto max-[760px]:max-w-[490px] max-[760px]:grid-cols-1">
+            <div className="login-visual motion-safe:animate-rise-in" style={{ animationDelay: "90ms" }}>
               <span className="eyebrow"><span className="live-dot" /> PEMILIHAN SISWA 2026/2027</span>
               <div className="visual-heading">
                 <h1>AYO PILIH<br />SESUAI ISI<br /><span>HATIMU</span></h1>
                 <p>Setiap pilihan punya arti. Yuk, tentukan pemimpin yang paling mewakili harapanmu.</p>
               </div>
               <div className="visual-bottom">
-                <span className="visual-decoration visual-decoration-one" aria-hidden="true" />
-                <span className="visual-decoration visual-decoration-two" aria-hidden="true" />
+                <span className="visual-decoration visual-decoration-one motion-safe:animate-float" aria-hidden="true" />
+                <span className="visual-decoration visual-decoration-two motion-safe:animate-float" aria-hidden="true" />
                 <div className="election-note">
-                  <span className="election-note-icon" aria-hidden="true">✓</span>
+                  <span className="election-note-icon motion-safe:animate-soft-pulse" aria-hidden="true">✓</span>
                   <span><strong>Satu suara berarti</strong><small>MPK&nbsp; · &nbsp;OSIS&nbsp; · &nbsp;KY</small></span>
                 </div>
                 <span className="visual-footnote">PEMILIHAN ORGANISASI KESISWAAN SEKOLAH</span>
               </div>
             </div>
 
-            <div className="login-form-panel">
+            <div className="login-form-panel motion-safe:animate-content-in" style={{ animationDelay: "180ms" }}>
               <div className="form-topline">
                 <span>{showAdminPasswordStep ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
                 <span className="secure-label"><span>✦</span> SUARA MANDARA</span>
               </div>
-              <div className="form-heading">
+              <div key={showAdminPasswordStep ? "admin" : "student"} className="form-heading motion-safe:animate-content-in">
                 <span className="form-icon">{showAdminPasswordStep ? "▣" : "↗"}</span>
                 <p>{showAdminPasswordStep ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
                 <h2>
@@ -394,7 +394,7 @@ export default function Home() {
               <form className="login-form" onSubmit={handleLogin}>
                 {showAdminPasswordStep ? (
                   <>
-                    <div className="admin-account">
+                    <div className="admin-account motion-safe:animate-content-in">
                       <span className="admin-account-avatar">A</span>
                       <span><strong>admin</strong><small>Masuk sebagai pengelola</small></span>
                       <button
@@ -457,7 +457,11 @@ export default function Home() {
                     ? "Memeriksa data..."
                     : showAdminPasswordStep
                       ? "Masuk ke halaman admin"
-                      : "Masuk & mulai memilih"} <span aria-hidden="true">→</span>
+                      : "Masuk & mulai memilih"} {isSubmitting ? (
+                    <span className="button-spinner motion-safe:animate-spin" aria-hidden="true" />
+                  ) : (
+                    <span aria-hidden="true">→</span>
+                  )}
                 </button>
               </form>
               <p className="login-hint"><span>✳</span> Gunakan hak pilihmu dengan bijak untuk menentukan pemimpin organisasi kesiswaan.</p>
@@ -476,8 +480,8 @@ export default function Home() {
   }
 
   return (
-    <main className="app-page">
-      <header className="app-header">
+    <main className="min-h-screen">
+      <header className="flex h-[70px] items-center justify-between border-b border-[#e9ebe4] bg-[rgba(255,255,255,.82)] px-8 motion-safe:animate-fade-in min-[1124px]:px-[calc((100vw-1060px)/2)] max-[760px]:h-[62px] max-[760px]:px-5">
         <a className="brand" href="#" aria-label="Suara Mandara">
           <span className="brand-mark"><span /></span>
           <span className="brand-copy">suara<span>mandara</span></span>
@@ -494,22 +498,22 @@ export default function Home() {
         </button>
       </header>
 
-      <div className="app-content">
+      <div className="mx-auto w-[min(1060px,calc(100%_-_64px))] max-[760px]:w-[calc(100%_-_36px)]">
         {appError && <p className="form-error app-error" role="alert">{appError}</p>}
-        <section className="welcome-strip">
+        <section className="welcome-strip motion-safe:animate-rise-in">
           <div>
             <span className="eyebrow dark-eyebrow"><span className="live-dot" /> SAATNYA IKUT MENENTUKAN</span>
             <h1>Hai, {voter}! <span className="wave">✳</span></h1>
             <p>Pilih pemimpin yang paling mewakili harapanmu.</p>
           </div>
-          <div className="progress-card">
+          <div className="progress-card motion-safe:animate-content-in" style={{ animationDelay: "120ms" }}>
             <div className="progress-copy"><span>PROGRES PEMILIHAN</span><strong>{votedCount}<small>/{organizations.length}</small></strong></div>
-            <div className="progress-track"><span style={{ width: `${(votedCount / organizations.length) * 100}%` }} /></div>
+            <div className="progress-track"><span className="motion-reduce:transition-none" style={{ width: `${(votedCount / organizations.length) * 100}%` }} /></div>
             <span className="progress-caption">{allVoted ? "Semua pilihanmu sudah tercatat!" : `${organizations.length - votedCount} organisasi lagi untuk dipilih`}</span>
           </div>
         </section>
 
-        <div className="voting-layout">
+        <div className="voting-layout motion-safe:animate-content-in" style={{ animationDelay: "100ms" }}>
           <aside className="organization-sidebar">
             <div className="section-label">PILIH ORGANISASI</div>
             <div className="organization-list">
@@ -519,14 +523,14 @@ export default function Home() {
                 return (
                   <button
                     key={organization.id}
-                    className={`organization-option ${isActive ? "active" : ""}`}
+                    className={`organization-option ${isActive ? "active" : ""} transition-[transform,background-color,border-color] duration-200 hover:translate-x-1 active:scale-[.985] motion-reduce:transform-none`}
                     onClick={() => {
                       setActiveOrganization(organization.id);
                       setSelectedCandidate("");
                     }}
                     aria-current={isActive ? "step" : undefined}
                   >
-                    <span className={`organization-icon ${organization.color}`}>{organization.initials}</span>
+                    <span className={`organization-icon ${organization.color} ${isActive ? "motion-safe:animate-check-pop" : ""}`}>{organization.initials}</span>
                     <span className="organization-copy"><strong>{organization.name}</strong><small>{organization.fullName}</small></span>
                     <span className={`organization-status ${hasVoted ? "done" : ""}`}>{hasVoted ? "✓" : `0${index + 1}`}</span>
                   </button>
@@ -541,7 +545,7 @@ export default function Home() {
             <div className="sidebar-decoration" aria-hidden="true"><span>✳</span><span>✳</span><span>·</span></div>
           </aside>
 
-          <section className="candidate-section">
+          <section key={activeOrganization} className="candidate-section motion-safe:animate-content-in">
             <div className="candidate-header">
               <div>
                 <span className="eyebrow dark-eyebrow">KANDIDAT {currentOrganization.name}</span>
@@ -551,8 +555,8 @@ export default function Home() {
               <span className="candidate-count">03 <span>PASLON</span></span>
             </div>
             {votes[activeOrganization] ? (
-              <div className="already-voted">
-                <span className="success-icon">✓</span>
+              <div className="already-voted motion-safe:animate-content-in">
+                <span className="success-icon motion-safe:animate-success-pop">✓</span>
                 <h3>Suaramu untuk {currentOrganization.name} sudah tercatat!</h3>
                 <p>Terima kasih sudah ikut menentukan masa depan sekolah kita.</p>
                 {votedCount < organizations.length && (
@@ -565,17 +569,18 @@ export default function Home() {
             ) : (
               <>
                 <div className="candidate-grid">
-                  {currentOrganization.candidates.map((candidate) => (
+                  {currentOrganization.candidates.map((candidate, index) => (
                     <button
                       key={candidate.id}
-                      className={`candidate-card ${selectedCandidate === candidate.id ? "selected" : ""}`}
+                      className={`candidate-card transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 motion-safe:animate-fade-in motion-reduce:animate-none motion-reduce:transform-none ${selectedCandidate === candidate.id ? "selected" : ""}`}
+                      style={{ animationDelay: `${index * 80}ms` }}
                       onClick={() => setSelectedCandidate(candidate.id)}
                       aria-pressed={selectedCandidate === candidate.id}
                     >
                       <span className="candidate-number">PASLON <strong>{candidate.number}</strong></span>
                       <span className={`candidate-photo ${candidate.color}`}>
                         <span className="portrait-initials">{candidate.initials}</span>
-                        <span className="photo-spark">✳</span>
+                        <span className="photo-spark motion-safe:animate-float">✳</span>
                         <span className="photo-orbit" />
                       </span>
                       <span className="candidate-info">
@@ -588,14 +593,14 @@ export default function Home() {
                         <span className="candidate-program">{candidate.program}</span>
                       </span>
                       <span className="candidate-motto">“{candidate.motto}”</span>
-                      <span className="select-indicator">{selectedCandidate === candidate.id ? "✓" : ""}</span>
+                      <span className={`select-indicator ${selectedCandidate === candidate.id ? "motion-safe:animate-check-pop" : ""}`}>{selectedCandidate === candidate.id ? "✓" : ""}</span>
                     </button>
                   ))}
                 </div>
                 <div className="voting-action">
                   <span><span className="small-lock">▣</span> Pilihanmu tercatat dan tidak dapat diubah.</span>
                   <button
-                    className="primary-button vote-button"
+                    className="primary-button vote-button transition-transform duration-200 hover:-translate-y-0.5 active:scale-[.98] motion-reduce:transform-none"
                     disabled={!selectedCandidate}
                     onClick={() => setShowConfirmation(true)}
                   >{selectedCandidate ? "Lanjutkan pilihan" : "Pilih kandidat dulu"} <span>→</span></button>
@@ -609,10 +614,10 @@ export default function Home() {
       </div>
 
       {showConfirmation && selectedCandidateDetails && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+        <div className="modal-backdrop motion-safe:animate-backdrop-in" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) setShowConfirmation(false);
         }}>
-          <section className="confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+          <section className="confirmation-modal motion-safe:animate-modal-in" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
             <button className="modal-close" onClick={() => setShowConfirmation(false)} aria-label="Tutup">×</button>
             <span className={`modal-candidate-avatar ${selectedCandidateDetails.color}`}>{selectedCandidateDetails.initials}</span>
             <span className="eyebrow dark-eyebrow">KONFIRMASI PILIHAN</span>
@@ -623,7 +628,11 @@ export default function Home() {
             <div className="modal-actions">
               <button className="secondary-button" onClick={() => setShowConfirmation(false)}>Lihat lagi</button>
               <button className="primary-button" onClick={submitVote} disabled={isSubmitting}>
-                {isSubmitting ? "Menyimpan..." : "Ya, kirim suara"} <span>→</span>
+                {isSubmitting ? "Menyimpan..." : "Ya, kirim suara"} {isSubmitting ? (
+                  <span className="button-spinner motion-safe:animate-spin" aria-hidden="true" />
+                ) : (
+                  <span aria-hidden="true">→</span>
+                )}
               </button>
             </div>
             <span className="demo-modal-note">Suara disimpan dengan aman dan tidak dapat diubah.</span>
