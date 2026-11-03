@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
+import { getCandidateConfigurations } from "@/lib/candidates";
 import { getDatabase } from "@/lib/db";
 import {
   candidateIds,
@@ -432,7 +433,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       success: true,
       mpkMembers: savedMpkMembersByPosition,
-      organizations: configurations,
+      organizations: getCandidateConfigurations(),
     });
   } catch (error) {
     console.error("Gagal menyimpan konfigurasi kandidat:", error);

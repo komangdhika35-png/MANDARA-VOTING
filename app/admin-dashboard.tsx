@@ -170,7 +170,14 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
       const response = await fetch("/api/admin/candidates", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizations: candidateConfigurations, mpkMembers }),
+        body: JSON.stringify({
+          organizations: {
+            ...candidateConfigurations,
+            osis: candidateConfigurations.osis.slice(0, 2),
+            ky: candidateConfigurations.ky.slice(0, 2),
+          },
+          mpkMembers,
+        }),
       });
       const data = (await response.json()) as {
         organizations?: CandidateConfigurations;
@@ -529,7 +536,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                         Nama dan nomor dikunci setelah suara tercatat. Foto, visi, dan misi tetap dapat diperbarui.
                       </p>
                     )}
-                    {candidateConfigurations[organizationId].map((candidate, index) => (
+                    {candidateConfigurations[organizationId].slice(0, 2).map((candidate, index) => (
                       <fieldset
                         className="candidate-edit-fields"
                         key={candidate.id}

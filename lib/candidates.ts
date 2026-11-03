@@ -1,6 +1,6 @@
 import { getDatabase } from "@/lib/db";
 import {
-  candidateIds,
+  candidateDatabaseIds,
   organizationIds,
   type CandidateConfiguration,
   type CandidateConfigurations,
@@ -39,7 +39,7 @@ export function getCandidateConfigurations(): CandidateConfigurations {
 
   for (const organizationId of organizationIds) {
     if (organizationId === "mpk") continue;
-    configurations[organizationId] = candidateIds[organizationId].map((candidateId) => {
+    configurations[organizationId] = candidateDatabaseIds[organizationId].map((candidateId) => {
       const row = candidatesById.get(candidateId);
       if (!row) throw new Error(`Konfigurasi kandidat ${candidateId} tidak ditemukan.`);
       return {

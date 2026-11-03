@@ -29,6 +29,12 @@ export type ElectionCandidates = {
 
 export const candidateIds: Record<OrganizationId, readonly string[]> = {
   mpk: ["mpk-1", "mpk-2", "mpk-3"],
+  osis: ["osis-1", "osis-2"],
+  ky: ["ky-1", "ky-2"],
+};
+
+export const candidateDatabaseIds: Record<OrganizationId, readonly string[]> = {
+  mpk: candidateIds.mpk,
   osis: ["osis-1", "osis-2", "osis-3"],
   ky: ["ky-1", "ky-2", "ky-3"],
 };

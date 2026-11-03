@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import {
+  candidateDatabaseIds,
   candidateIds,
   candidateNames,
   candidateViceNames,
@@ -28,7 +29,7 @@ function createDatabase() {
      VALUES (?, ?, ?, ?, ?)`,
   );
   for (const organizationId of organizationIds) {
-    candidateIds[organizationId].forEach((candidateId, index) => {
+    candidateDatabaseIds[organizationId].forEach((candidateId, index) => {
       insertCandidate.run(
         candidateId,
         organizationId,

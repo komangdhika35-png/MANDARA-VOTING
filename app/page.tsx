@@ -302,7 +302,7 @@ export default function Home() {
               program: "",
               motto: "",
             }))
-          : organization.candidates.map((candidate) => {
+          : organization.candidates.slice(0, 2).map((candidate) => {
               const configured = electionCandidates?.organizations[organization.id].find(
                 (item) => item.id === candidate.id,
               );
@@ -466,6 +466,27 @@ export default function Home() {
     ? electionCandidates?.mpkMembers[mpkPosterPosition] ?? []
     : [];
   const mpkPosterPositionLabel = mpkPosterPosition === "vice" ? "wakil ketua" : "ketua";
+  const isMpkCompletedScreen =
+    role === "student" &&
+    activeOrganization === "mpk" &&
+    (Boolean(votes.mpk) || Boolean(mpkSelections.chair && mpkSelections.vice));
+  const isPairCompletedScreen =
+    role === "student" &&
+    (activeOrganization === "osis" || activeOrganization === "ky") &&
+    Boolean(votes[activeOrganization]);
+  const isElectionCompletedScreen = isMpkCompletedScreen || isPairCompletedScreen;
+  const activeOrganizationIndex = electionOrganizations.findIndex(
+    (organization) => organization.id === activeOrganization,
+  );
+  const nextUnvotedOrganization = [
+    ...electionOrganizations.slice(activeOrganizationIndex + 1),
+    ...electionOrganizations.slice(0, activeOrganizationIndex),
+  ].find((organization) => !votes[organization.id]);
+  const isPairPoster =
+    role === "student" &&
+    (activeOrganization === "osis" || activeOrganization === "ky") &&
+    !votes[activeOrganization];
+  const pairPosterCandidates = currentOrganization.candidates.slice(0, 2);
 
   if (!ready) return <main className="loading-screen" aria-label="Memuat aplikasi" />;
 
@@ -628,7 +649,7 @@ export default function Home() {
         </button>
       </header>
 
-      <div className={`app-content ${isMpkPoster ? "mpk-poster-content" : ""}`}>
+      <div className={`app-content ${isMpkPoster || isPairPoster || isElectionCompletedScreen ? "mpk-poster-content" : ""}`}>
         {isMpkPoster ? (
           <section className="mpk-poster-page" aria-labelledby="mpk-poster-title">
             <header className="mpk-poster-heading">
@@ -660,8 +681,8 @@ export default function Home() {
                     type="button"
                     disabled={!candidate || isSubmitting}
                     onClick={() => {
-                      if (!candidate) return;
-                      setSelectedMpkPosition("chair");
+                      if (!candidate || !mpkPosterPosition) return;
+                      setSelectedMpkPosition(mpkPosterPosition);
                       setSelectedCandidate(candidate.id);
                     }}
                     aria-pressed={Boolean(candidate && isSelected)}
@@ -706,6 +727,101 @@ export default function Home() {
                       </span>
                     </span>
                     <span className="mpk-poster-select">{isSelected ? "✓ Dipilih" : candidate ? "Pilih calon" : "Belum tersedia"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : isElectionCompletedScreen ? (
+          <section className="mpk-completion-page" aria-labelledby="election-completion-title">
+            <div className="mpk-completion-card">
+              <span className="mpk-completion-spark mpk-completion-spark-one" aria-hidden="true">✳</span>
+              <span className="mpk-completion-spark mpk-completion-spark-two" aria-hidden="true">✦</span>
+              <span className="mpk-completion-check-wrap">
+                <span className="mpk-completion-check" aria-hidden="true">✓</span>
+              </span>
+              <span className="mpk-completion-eyebrow">PEMILIHAN {currentOrganization.name} SELESAI</span>
+              <h1 id="election-completion-title">Suara {currentOrganization.name} sudah tercatat</h1>
+              <p>
+                {activeOrganization === "mpk"
+                  ? "Pilihan calon ketua dan wakil MPK berhasil disimpan. Terima kasih sudah menggunakan hak pilihmu."
+                  : `Pilihan pasangan calon ${currentOrganization.name} berhasil disimpan. Terima kasih sudah menggunakan hak pilihmu.`}
+              </p>
+              <div className="mpk-completion-choices" aria-label={`Pilihan ${currentOrganization.name} sudah tercatat`}>
+                {activeOrganization === "mpk" ? (
+                  <>
+                    <span><i aria-hidden="true">✓</i> Calon ketua MPK</span>
+                    <span><i aria-hidden="true">✓</i> Calon wakil MPK</span>
+                  </>
+                ) : (
+                  <span><i aria-hidden="true">✓</i> Pasangan calon {currentOrganization.name}</span>
+                )}
+              </div>
+              {appError && <p className="form-error app-error" role="alert">{appError}</p>}
+            </div>
+          </section>
+        ) : isPairPoster ? (
+          <section className="mpk-poster-page pair-poster-page" aria-labelledby="pair-poster-title">
+            <header className="mpk-poster-heading">
+              <span className="eyebrow dark-eyebrow"><span className="live-dot" /> PEMILIHAN {currentOrganization.name} 2026/2027</span>
+              <h1 id="pair-poster-title">Kenali paslon {currentOrganization.name}</h1>
+              <p>Pilih satu pasangan calon ketua dan wakil yang paling mewakili harapanmu.</p>
+              <div className="mpk-poster-notice" role="note">
+                Foto atau visi-misi yang belum diatur admin ditampilkan sebagai ilustrasi atau contoh.
+              </div>
+              <span className="mpk-poster-count">{pairPosterCandidates.length} paslon</span>
+            </header>
+            {appError && <p className="form-error app-error" role="alert">{appError}</p>}
+            <div className="pair-poster-grid">
+              {pairPosterCandidates.map((candidate) => {
+                const isSelected = candidate.id === selectedCandidate;
+                const vision = candidate.vision?.trim() || "";
+                const mission = candidate.mission?.trim() || "";
+                return (
+                  <button
+                    className={`pair-poster-card ${isSelected ? "selected" : ""}`}
+                    key={candidate.id}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => setSelectedCandidate(candidate.id)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="mpk-poster-card-top">
+                      <span>PASANGAN CALON {currentOrganization.name}</span>
+                      <strong>{candidate.number}</strong>
+                    </span>
+                    <span className={`mpk-poster-portrait pair-poster-portrait ${candidate.color}`}>
+                      {candidate.photoDataUrl ? (
+                        <Image
+                          className="mpk-poster-photo"
+                          src={candidate.photoDataUrl}
+                          alt={`Foto pasangan ${candidate.name} dan ${candidate.viceName}`}
+                          width={360}
+                          height={240}
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="pair-poster-initials">{candidate.initials}</span>
+                      )}
+                      <span className="mpk-poster-photo-label">{candidate.photoDataUrl ? "FOTO" : "ILUSTRASI"}</span>
+                    </span>
+                    <span className="pair-poster-names">
+                      <span><small>CALON KETUA</small><strong>{candidate.name}</strong></span>
+                      <span className="pair-poster-plus" aria-hidden="true">&amp;</span>
+                      <span><small>CALON WAKIL</small><strong>{candidate.viceName}</strong></span>
+                    </span>
+                    <span className="pair-poster-profile">
+                      <span className="mpk-poster-copy-label">Visi{vision ? "" : " · Contoh"}</span>
+                      <span className="mpk-poster-vision">{vision || candidate.program}</span>
+                      <span className="mpk-poster-copy-label">Misi{mission ? "" : " · Contoh"}</span>
+                      <span className="mpk-poster-missions">
+                        {(mission
+                          ? mission.split(/\n+/).map((item) => item.trim()).filter(Boolean)
+                          : [candidate.motto]
+                        ).map((item) => <span key={item}>{item}</span>)}
+                      </span>
+                    </span>
+                    <span className="mpk-poster-select">{isSelected ? "✓ Dipilih" : "Pilih paslon"}</span>
                   </button>
                 );
               })}
@@ -963,6 +1079,62 @@ export default function Home() {
             onClick={() => setShowConfirmation(true)}
           >
             {mpkPosterPosition === "chair" ? "Pilih calon ketua & lanjutkan" : "Pilih calon wakil & lanjutkan"} <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      )}
+
+      {isElectionCompletedScreen && (
+        <div className="mpk-poster-action-bar completion-action-bar">
+          <div className="mpk-poster-action-copy">
+            <strong>{nextUnvotedOrganization ? `Lanjut memilih ${nextUnvotedOrganization.name}` : "Semua pilihan sudah tercatat"}</strong>
+            <span>{nextUnvotedOrganization ? "Pilih pasangan calon organisasi berikutnya." : "Terima kasih telah menggunakan hak pilihmu."}</span>
+          </div>
+          {nextUnvotedOrganization && (
+            <button
+              className="primary-button mpk-poster-action-button"
+              type="button"
+              onClick={() => {
+                setActiveOrganization(nextUnvotedOrganization.id);
+                setSelectedCandidate("");
+                setAppError("");
+              }}
+            >
+              Lanjut memilih {nextUnvotedOrganization.name} <span aria-hidden="true">→</span>
+            </button>
+          )}
+          {!nextUnvotedOrganization && (
+            <button
+              className="primary-button mpk-poster-action-button"
+              type="button"
+              onClick={() => {
+                void handleLogout().catch((error: unknown) => {
+                  setAppError(error instanceof Error ? error.message : "Gagal kembali ke menu awal.");
+                });
+              }}
+            >
+              Kembali ke menu awal <span aria-hidden="true">↗</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {isPairPoster && (
+        <div className="mpk-poster-action-bar pair-poster-action-bar">
+          <div className="mpk-poster-action-copy">
+            <strong>
+              {selectedCandidateDetails
+                ? `${selectedCandidateDetails.name} & ${selectedCandidateDetails.viceName}`
+                : `Pilih satu paslon ${currentOrganization.name}`}
+            </strong>
+            <span>{selectedCandidateDetails ? "Periksa pilihan sebelum mengirim suara." : "Pilih paslon untuk melanjutkan."}</span>
+          </div>
+          <button
+            className="primary-button mpk-poster-action-button"
+            type="button"
+            disabled={!selectedCandidateDetails || isSubmitting}
+            onClick={() => setShowConfirmation(true)}
+          >
+            {selectedCandidateDetails ? "Pilih paslon ini" : "Pilih paslon dulu"} <span aria-hidden="true">→</span>
           </button>
         </div>
       )}
