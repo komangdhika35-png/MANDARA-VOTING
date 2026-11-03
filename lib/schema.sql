@@ -52,3 +52,58 @@ CREATE TABLE IF NOT EXISTS ballots (
 );
 
 CREATE INDEX IF NOT EXISTS ballots_organization ON ballots(organization_id);
+
+CREATE TABLE IF NOT EXISTS election_candidates (
+  candidate_id TEXT PRIMARY KEY NOT NULL,
+  organization_id TEXT NOT NULL CHECK (organization_id IN ('mpk', 'osis', 'ky')),
+  candidate_number TEXT NOT NULL,
+  candidate_name TEXT NOT NULL,
+  vice_name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS election_candidate_details (
+  candidate_id TEXT PRIMARY KEY NOT NULL REFERENCES election_candidates(candidate_id) ON DELETE CASCADE,
+  photo_data_url TEXT NOT NULL DEFAULT '',
+  vision TEXT NOT NULL DEFAULT '',
+  mission TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS mpk_members (
+  member_id TEXT PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mpk_member_details (
+  member_id TEXT PRIMARY KEY NOT NULL REFERENCES mpk_members(member_id) ON DELETE CASCADE,
+  photo_data_url TEXT NOT NULL DEFAULT '',
+  vision TEXT NOT NULL DEFAULT '',
+  mission TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS mpk_member_positions (
+  member_id TEXT NOT NULL REFERENCES mpk_members(member_id) ON DELETE CASCADE,
+  position TEXT NOT NULL CHECK (position IN ('chair', 'vice')),
+  PRIMARY KEY (member_id, position)
+);
+
+CREATE TABLE IF NOT EXISTS mpk_choices (
+  nis TEXT NOT NULL REFERENCES voters(nis) ON DELETE CASCADE,
+  position TEXT NOT NULL CHECK (position IN ('chair', 'vice')),
+  member_id TEXT NOT NULL REFERENCES mpk_members(member_id),
+  voted_at INTEGER NOT NULL,
+  PRIMARY KEY (nis, position)
+);
+
+CREATE TABLE IF NOT EXISTS mpk_ballots (
+  ballot_id TEXT PRIMARY KEY NOT NULL,
+  position TEXT NOT NULL CHECK (position IN ('chair', 'vice')),
+  member_id TEXT NOT NULL REFERENCES mpk_members(member_id),
+  cast_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS mpk_ballots_position ON mpk_ballots(position);
+
+CREATE TABLE IF NOT EXISTS app_migrations (
+  migration_id TEXT PRIMARY KEY NOT NULL,
+  applied_at INTEGER NOT NULL
+);

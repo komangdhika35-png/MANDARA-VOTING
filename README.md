@@ -2,9 +2,9 @@
 
 Portal pemilihan ketua MPK, OSIS, dan KY yang dibuat dengan Next.js. Data pemilih dan hasil suara disimpan di database SQLite pada server yang menjalankan aplikasi.
 
-Untuk MPK, admin mengelola daftar calon ketua dari kelas 11 dan daftar calon wakil dari kelas 10 secara terpisah. Pemilih memilih satu nama dari setiap kategori. OSIS dan KY menggunakan tiga pasangan calon yang dapat diatur admin.
+Untuk MPK, admin mengelola maksimal 10 calon ketua dari kelas 11 dan daftar calon wakil dari kelas 10 secara terpisah. Profil setiap calon MPK dapat dilengkapi dengan foto JPG/PNG/WebP (maksimal 512 KB), visi, dan misi. OSIS dan KY masing-masing memiliki tiga pasangan calon; setiap paslon juga dapat dilengkapi foto, visi, dan misi. Pemilih memilih satu nama dari setiap kategori MPK atau satu paslon OSIS/KY.
 
-Admin mengelola kedua daftar MPK pada bagian **Atur kandidat**. Daftar MPK dikunci setelah pilihan pertama tercatat agar suara tetap merujuk ke calon yang benar. Jika database memiliki suara MPK dari format pasangan calon sebelumnya, saat aplikasi dibuka suara tersebut dipindahkan ke rekap ketua dan wakil sesuai pasangan yang telah dipilih.
+Admin mengelola daftar dan profil kandidat pada bagian **Atur kandidat**. Nama dan keanggotaan calon MPK serta nama/nomor paslon OSIS/KY dikunci setelah suara tercatat agar rekap tetap merujuk ke kandidat yang benar; foto, visi, dan misi tetap dapat diperbarui. Kartu pemilihan menampilkan profil yang diatur admin dan menggunakan ilustrasi atau teks contoh bila foto, visi, atau misi belum diisi. Jika database memiliki suara MPK dari format pasangan calon sebelumnya, saat aplikasi dibuka suara tersebut dipindahkan ke rekap ketua dan wakil sesuai pasangan yang telah dipilih.
 
 ## Menjalankan aplikasi
 

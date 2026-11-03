@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import type {
   CandidateConfigurations,
@@ -32,6 +33,25 @@ type Results = {
   organizations: OrganizationResult[];
   totalVotes: number;
 };
+
+function readCandidatePhoto(file: File): Promise<string> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return Promise.reject(new Error("Foto calon harus berformat JPG, PNG, atau WebP."));
+  }
+  if (file.size > 512 * 1024) {
+    return Promise.reject(new Error("Ukuran foto calon maksimal 512 KB."));
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("File foto tidak dapat dibaca."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("File foto tidak dapat dibaca."));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<void> }) {
   const [activeAdminPage, setActiveAdminPage] = useState<"results" | "candidates">("results");
@@ -78,7 +98,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
   function updateCandidate(
     organizationId: OrganizationId,
     candidateId: string,
-    field: "name" | "viceName" | "number",
+    field: "name" | "viceName" | "number" | "photoDataUrl" | "vision" | "mission",
     value: string,
   ) {
     setCandidateConfigurations((current) => {
@@ -93,18 +113,52 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
     setCandidateMessage("");
   }
 
-  function updateMpkMember(position: "chair" | "vice", memberId: string, value: string) {
+  function updateMpkMember(
+    memberId: string,
+    field: "name" | "photoDataUrl" | "vision" | "mission",
+    value: string,
+  ) {
     setMpkMembers((current) =>
       current
         ? {
-            ...current,
-            [position]: current[position].map((member) =>
-              member.id === memberId ? { ...member, name: value } : member,
+            chair: current.chair.map((member) =>
+              member.id === memberId ? { ...member, [field]: value } : member,
+            ),
+            vice: current.vice.map((member) =>
+              member.id === memberId ? { ...member, [field]: value } : member,
             ),
           }
         : null,
     );
     setCandidateMessage("");
+  }
+
+  async function handleMpkPhotoChange(memberId: string, file: File) {
+    setCandidateError("");
+    try {
+      const photoDataUrl = await readCandidatePhoto(file);
+      updateMpkMember(memberId, "photoDataUrl", photoDataUrl);
+    } catch (photoError) {
+      setCandidateError(
+        photoError instanceof Error ? photoError.message : "Tidak dapat membaca foto calon.",
+      );
+    }
+  }
+
+  async function handleCandidatePhotoChange(
+    organizationId: OrganizationId,
+    candidateId: string,
+    file: File,
+  ) {
+    setCandidateError("");
+    try {
+      const photoDataUrl = await readCandidatePhoto(file);
+      updateCandidate(organizationId, candidateId, "photoDataUrl", photoDataUrl);
+    } catch (photoError) {
+      setCandidateError(
+        photoError instanceof Error ? photoError.message : "Tidak dapat membaca foto calon.",
+      );
+    }
   }
 
   async function saveCandidates() {
@@ -285,7 +339,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
             <div>
               <span className="eyebrow dark-eyebrow">PENGATURAN PEMILIHAN</span>
               <h2 id="candidate-management-title">Atur kandidat</h2>
-              <p>Kelola calon ketua MPK kelas 11, calon wakil MPK kelas 10, serta paslon OSIS dan KY.</p>
+              <p>Kelola nama, foto, visi, dan misi calon MPK, OSIS, dan KY.</p>
             </div>
             <button
               className="primary-button candidate-save-button"
@@ -302,7 +356,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                 {(results?.organizations.find((organization) => organization.id === "mpk")
                   ?.hasAnyVotes ?? false) && (
                   <p className="candidate-locked-note">
-                    Daftar calon tidak dapat diubah karena suara sudah tercatat.
+                    Nama dan daftar calon dikunci setelah suara tercatat. Foto, visi, dan misi tetap dapat diperbarui.
                   </p>
                 )}
                 {(["chair", "vice"] as const).map((position) => {
@@ -312,55 +366,126 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     <section className="mpk-admin-category" key={position}>
                       <h4>{positionTitle}</h4>
                       {mpkMembers[position].map((member) => (
-                        <div className="mpk-member-edit-row" key={`${position}-${member.id}`}>
-                          <label className="sr-only" htmlFor={`${position}-${member.id}-name`}>
-                            {positionTitle}
-                          </label>
-                          <input
-                            id={`${position}-${member.id}-name`}
-                            maxLength={80}
-                            value={member.name}
-                            disabled={
-                              results?.organizations.find((organization) => organization.id === "mpk")
-                                ?.hasAnyVotes ?? false
-                            }
-                            onChange={(event) =>
-                              updateMpkMember(position, member.id, event.target.value)
-                            }
-                          />
-                          <button
-                            type="button"
-                            className="remove-member-button"
-                            aria-label={`Hapus ${member.name} dari ${positionTitle}`}
-                            disabled={
-                              (results?.organizations.find(
-                                (organization) => organization.id === "mpk",
-                              )?.hasAnyVotes ?? false) ||
-                              mpkMembers[position].length <= 1
-                            }
-                            onClick={() =>
-                              setMpkMembers((current) =>
-                                current
-                                  ? {
-                                      ...current,
-                                      [position]: current[position].filter(
-                                        (item) => item.id !== member.id,
-                                      ),
-                                    }
-                                  : null,
-                              )
-                            }
-                          >
-                            ×
-                          </button>
-                        </div>
+                        <article className="mpk-member-editor" key={`${position}-${member.id}`}>
+                          <div className="mpk-member-edit-row">
+                            <label className="sr-only" htmlFor={`${position}-${member.id}-name`}>
+                              Nama {positionTitle}
+                            </label>
+                            <input
+                              id={`${position}-${member.id}-name`}
+                              maxLength={80}
+                              value={member.name}
+                              disabled={
+                                savingCandidates ||
+                                (results?.organizations.find((organization) => organization.id === "mpk")
+                                  ?.hasAnyVotes ?? false)
+                              }
+                              onChange={(event) =>
+                                updateMpkMember(member.id, "name", event.target.value)
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="remove-member-button"
+                              aria-label={`Hapus ${member.name} dari ${positionTitle}`}
+                              disabled={
+                                savingCandidates ||
+                                (results?.organizations.find(
+                                  (organization) => organization.id === "mpk",
+                                )?.hasAnyVotes ?? false) ||
+                                mpkMembers[position].length <= 1
+                              }
+                              onClick={() =>
+                                setMpkMembers((current) =>
+                                  current
+                                    ? {
+                                        ...current,
+                                        [position]: current[position].filter(
+                                          (item) => item.id !== member.id,
+                                        ),
+                                      }
+                                    : null,
+                                )
+                              }
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="mpk-member-profile">
+                            <div className="mpk-member-photo-field">
+                              <label htmlFor={`${position}-${member.id}-photo`}>
+                                Foto calon <small>JPG, PNG, WebP · maks. 512 KB</small>
+                              </label>
+                              <input
+                                id={`${position}-${member.id}-photo`}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                disabled={savingCandidates}
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0];
+                                  event.target.value = "";
+                                  if (file) void handleMpkPhotoChange(member.id, file);
+                                }}
+                              />
+                              {member.photoDataUrl && (
+                                <div className="mpk-member-photo-preview">
+                                  <Image
+                                    src={member.photoDataUrl}
+                                    alt={`Foto ${member.name}`}
+                                    width={96}
+                                    height={96}
+                                    unoptimized
+                                  />
+                                  <button
+                                    type="button"
+                                    className="remove-photo-button"
+                                    disabled={savingCandidates}
+                                    onClick={() => updateMpkMember(member.id, "photoDataUrl", "")}
+                                  >
+                                    Hapus foto
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <label className="mpk-member-text-field" htmlFor={`${position}-${member.id}-vision`}>
+                              Visi
+                              <textarea
+                                id={`${position}-${member.id}-vision`}
+                                maxLength={500}
+                                rows={3}
+                                value={member.vision}
+                                disabled={savingCandidates}
+                                placeholder="Tuliskan visi calon"
+                                onChange={(event) =>
+                                  updateMpkMember(member.id, "vision", event.target.value)
+                                }
+                              />
+                            </label>
+                            <label className="mpk-member-text-field" htmlFor={`${position}-${member.id}-mission`}>
+                              Misi
+                              <textarea
+                                id={`${position}-${member.id}-mission`}
+                                maxLength={1200}
+                                rows={4}
+                                value={member.mission}
+                                disabled={savingCandidates}
+                                placeholder="Tuliskan misi calon"
+                                onChange={(event) =>
+                                  updateMpkMember(member.id, "mission", event.target.value)
+                                }
+                              />
+                            </label>
+                          </div>
+                        </article>
                       ))}
                       <button
                         type="button"
                         className="add-member-button"
                         disabled={
+                          savingCandidates ||
                           (results?.organizations.find((organization) => organization.id === "mpk")
                             ?.hasAnyVotes ?? false) ||
+                          (position === "chair" && mpkMembers.chair.length >= 10) ||
                           mpkMembers.chair.length + mpkMembers.vice.length >= 200
                         }
                         onClick={() => {
@@ -370,8 +495,14 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                                   ...current,
                                   [position]: [
                                     ...current[position],
-                                    { id: `mpk-member-${crypto.randomUUID()}`, name: "" },
-                                  ],
+                                      {
+                                        id: `mpk-member-${crypto.randomUUID()}`,
+                                        name: "",
+                                        photoDataUrl: "",
+                                        vision: "",
+                                        mission: "",
+                                      },
+                                    ],
                                 }
                               : null,
                           );
@@ -395,14 +526,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     <h3>{organizationId.toUpperCase()}</h3>
                     {hasVotes && (
                       <p className="candidate-locked-note">
-                        Paslon tidak dapat diubah karena suara sudah tercatat.
+                        Nama dan nomor dikunci setelah suara tercatat. Foto, visi, dan misi tetap dapat diperbarui.
                       </p>
                     )}
                     {candidateConfigurations[organizationId].map((candidate, index) => (
                       <fieldset
                         className="candidate-edit-fields"
                         key={candidate.id}
-                        disabled={hasVotes}
                       >
                         <legend>Paslon {index + 1}</legend>
                         <label htmlFor={`${candidate.id}-name`}>Nama calon ketua</label>
@@ -410,6 +540,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                           id={`${candidate.id}-name`}
                           maxLength={80}
                           value={candidate.name}
+                          disabled={savingCandidates || hasVotes}
                           onChange={(event) =>
                             updateCandidate(
                               organizationId,
@@ -424,6 +555,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                           id={`${candidate.id}-vice`}
                           maxLength={80}
                           value={candidate.viceName}
+                          disabled={savingCandidates || hasVotes}
                           onChange={(event) =>
                             updateCandidate(
                               organizationId,
@@ -439,11 +571,83 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                           inputMode="numeric"
                           maxLength={2}
                           value={candidate.number}
+                          disabled={savingCandidates || hasVotes}
                           onChange={(event) =>
                             updateCandidate(
                               organizationId,
                               candidate.id,
                               "number",
+                              event.target.value,
+                            )
+                          }
+                        />
+                        <label htmlFor={`${candidate.id}-photo`}>
+                          Foto pasangan <small>JPG, PNG, WebP · maks. 512 KB</small>
+                        </label>
+                        <input
+                          id={`${candidate.id}-photo`}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={savingCandidates}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) {
+                              void handleCandidatePhotoChange(organizationId, candidate.id, file);
+                            }
+                          }}
+                        />
+                        {candidate.photoDataUrl && (
+                          <div className="mpk-member-photo-preview">
+                            <Image
+                              src={candidate.photoDataUrl}
+                              alt={`Foto pasangan ${candidate.name} dan ${candidate.viceName}`}
+                              width={96}
+                              height={96}
+                              unoptimized
+                            />
+                            <button
+                              type="button"
+                              className="remove-photo-button"
+                              disabled={savingCandidates}
+                              onClick={() =>
+                                updateCandidate(organizationId, candidate.id, "photoDataUrl", "")
+                              }
+                            >
+                              Hapus foto
+                            </button>
+                          </div>
+                        )}
+                        <label htmlFor={`${candidate.id}-vision`}>Visi</label>
+                        <textarea
+                          id={`${candidate.id}-vision`}
+                          maxLength={500}
+                          rows={3}
+                          value={candidate.vision}
+                          disabled={savingCandidates}
+                          placeholder="Tuliskan visi pasangan"
+                          onChange={(event) =>
+                            updateCandidate(
+                              organizationId,
+                              candidate.id,
+                              "vision",
+                              event.target.value,
+                            )
+                          }
+                        />
+                        <label htmlFor={`${candidate.id}-mission`}>Misi</label>
+                        <textarea
+                          id={`${candidate.id}-mission`}
+                          maxLength={1200}
+                          rows={4}
+                          value={candidate.mission}
+                          disabled={savingCandidates}
+                          placeholder="Tuliskan misi pasangan"
+                          onChange={(event) =>
+                            updateCandidate(
+                              organizationId,
+                              candidate.id,
+                              "mission",
                               event.target.value,
                             )
                           }

@@ -2,6 +2,31 @@ export const organizationIds = ["mpk", "osis", "ky"] as const;
 
 export type OrganizationId = (typeof organizationIds)[number];
 
+export type CandidateConfiguration = {
+  id: string;
+  name: string;
+  viceName: string;
+  number: string;
+  photoDataUrl: string;
+  vision: string;
+  mission: string;
+};
+
+export type CandidateConfigurations = Record<OrganizationId, CandidateConfiguration[]>;
+
+export type MpkMember = {
+  id: string;
+  name: string;
+  photoDataUrl: string;
+  vision: string;
+  mission: string;
+};
+
+export type ElectionCandidates = {
+  mpkMembers: Record<"chair" | "vice", MpkMember[]>;
+  organizations: CandidateConfigurations;
+};
+
 export const candidateIds: Record<OrganizationId, readonly string[]> = {
   mpk: ["mpk-1", "mpk-2", "mpk-3"],
   osis: ["osis-1", "osis-2", "osis-3"],

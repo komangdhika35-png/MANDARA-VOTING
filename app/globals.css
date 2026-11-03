@@ -131,6 +131,8 @@ a { color: inherit; text-decoration: none; }
 .candidate-number { display: flex; align-items: center; justify-content: space-between; color: #9aa197; font-size: 7px; font-weight: 700; letter-spacing: .7px; }
 .candidate-number strong { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; color: #627650; background: #f0f3e8; font-size: 8px; letter-spacing: 0; }
 .candidate-photo { height: 139px; position: relative; display: flex; align-items: center; justify-content: center; margin: 10px 0 11px; overflow: hidden; border-radius: 6px; }
+.candidate-photo-image { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.candidate-photo-label { position: absolute; z-index: 2; right: 7px; bottom: 7px; padding: 4px 6px; border-radius: 4px; color: #745a59; background: rgba(255,255,255,.86); font-size: 6px; font-weight: 800; letter-spacing: .6px; }
 .candidate-photo::before { content: ""; position: absolute; width: 116px; height: 116px; right: -22px; bottom: -57px; border: 1px solid rgba(255,255,255,.58); border-radius: 50%; box-shadow: 0 0 0 10px rgba(255,255,255,.12), 0 0 0 22px rgba(255,255,255,.1); }
 .candidate-photo.rose { background: linear-gradient(145deg, #f8e9e6, #ebc7c7); }.candidate-photo.blue { background: linear-gradient(145deg, #e5eff0, #b9d1da); }.candidate-photo.yellow { background: linear-gradient(145deg, #f6f0d8, #e6d9aa); }.candidate-photo.mint { background: linear-gradient(145deg, #e1eee0, #bad7bf); }.candidate-photo.peach { background: linear-gradient(145deg, #f8ebe0, #e9c5ac); }.candidate-photo.lilac { background: linear-gradient(145deg, #eee8f5, #cfc0e2); }
 .portrait-initials { width: 75px; height: 75px; position: relative; z-index: 1; border: 4px solid rgba(255,255,255,.63); border-radius: 50%; display: grid; place-items: center; color: rgba(39, 65, 53, .78); background: rgba(255,255,255,.3); font: 700 19px "Manrope", sans-serif; letter-spacing: -1px; }
@@ -139,8 +141,9 @@ a { color: inherit; text-decoration: none; }
 .candidate-info { min-height: 101px; display: flex; flex-direction: column; }
 .candidate-name { color: #30453b; font: 700 12px "Manrope", sans-serif; letter-spacing: -.3px; }
 .candidate-class { margin-top: 3px; color: #929a91; font-size: 8px; }
-.candidate-program { display: -webkit-box; min-height: 35px; margin-top: 10px; overflow: hidden; color: #78837a; font-size: 8px; line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.candidate-motto { display: block; min-height: 28px; margin-top: 8px; padding: 7px 6px; border-radius: 4px; color: #677b5a; background: #f5f7ef; font-size: 7px; font-style: italic; line-height: 1.4; }
+.candidate-program { display: -webkit-box; min-height: 35px; margin-top: 10px; overflow: hidden; color: #78837a; font-size: 8px; line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.candidate-program small,.candidate-motto small { display: block; margin-bottom: 3px; color: #a93646; font-size: 7px; font-style: normal; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.candidate-motto { display: block; min-height: 38px; margin-top: 8px; padding: 7px 6px; border-radius: 4px; color: #677b5a; background: #f5f7ef; font-size: 7px; font-style: normal; line-height: 1.5; white-space: pre-line; }
 .select-indicator { position: absolute; right: 9px; bottom: 9px; width: 16px; height: 16px; border: 1px solid #dfe5d6; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #fff; font-size: 9px; }
 .candidate-card.selected .select-indicator { border-color: #668549; background: #668549; }
 .voting-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 17px; }
@@ -506,6 +509,12 @@ a { color: inherit; text-decoration: none; }
 .login-form-panel .primary-button:focus-visible { outline-color: #e7a0a7; }
 .admin-page { min-height: 100vh; }
 .admin-content { padding-bottom: 30px; }
+.admin-page-nav { display: flex; gap: 5px; margin-bottom: 17px; border-bottom: 1px solid #e9ebe4; }
+.admin-page-nav button { min-height: 40px; padding: 0 15px; border: 0; border-bottom: 2px solid transparent; color: #78837a; background: transparent; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+.admin-page-nav button:hover { color: #a93646; }
+.admin-page-nav button.active { border-bottom-color: #b83243; color: #a93646; }
+.admin-page-nav button:focus-visible { outline: 2px solid #d99099; outline-offset: -2px; }
+.admin-page-panel[hidden] { display: none; }
 .admin-welcome {
   display: flex;
   align-items: center;
@@ -544,6 +553,51 @@ a { color: inherit; text-decoration: none; }
 .admin-total-card strong { margin-top: 5px; color: #342b2c; font: 800 25px "Nunito", sans-serif; }
 .admin-total-caption { margin-left: auto; color: #9a8c8d; font-size: 9px; }
 .admin-privacy-notice { margin: 11px 0 0; padding: 10px 12px; border: 1px solid #f1e2c6; border-radius: 8px; color: #795a2d; background: #fffaf0; font-size: 9px; line-height: 1.55; }
+.candidate-management { margin-top: 20px; padding: 20px; border: 1px solid #e9ebe4; border-radius: 11px; background: #fff; }
+.candidate-management-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.candidate-management-heading h2 { margin: 7px 0 4px; color: #27392f; font: 800 20px "Nunito", "DM Sans", sans-serif; }
+.candidate-management-heading p { margin: 0; color: #838d84; font-size: 10px; }
+.candidate-save-button { flex: 0 0 auto; padding: 0 15px; background: #b83243; }
+.candidate-save-button:hover:not(:disabled) { background: #9e2939; }
+.candidate-save-button:disabled { opacity: .65; cursor: wait; }
+.candidate-management-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 17px; }
+.candidate-management-card { min-width: 0; padding: 14px; border: 1px solid #f0e9e7; border-radius: 9px; background: #fffdfd; }
+.candidate-management-card h3 { margin: 0 0 12px; color: #a93646; font-size: 12px; }
+.candidate-locked-note { margin: -4px 0 10px; color: #795a2d; font-size: 9px; line-height: 1.5; }
+.candidate-edit-fields { display: grid; gap: 7px; margin: 0; padding: 12px 0; border: 0; border-top: 1px solid #f1ece9; }
+.candidate-edit-fields legend { padding: 0 6px 0 0; color: #647168; font-size: 9px; font-weight: 700; }
+.candidate-edit-fields label { color: #647168; font-size: 8px; font-weight: 700; }
+.candidate-edit-fields input { width: 100%; min-width: 0; height: 34px; padding: 0 9px; border: 1px solid #e5e6df; border-radius: 6px; color: #34483e; background: #fff; font: inherit; font-size: 10px; }
+.candidate-edit-fields input:focus { border-color: #b83243; outline: 2px solid rgba(184, 50, 67, .12); }
+.candidate-edit-fields input:last-child { max-width: 90px; }
+.candidate-edit-fields textarea { width: 100%; min-width: 0; resize: vertical; padding: 8px 9px; border: 1px solid #e5e6df; border-radius: 6px; color: #34483e; background: #fff; font: inherit; font-size: 9px; line-height: 1.5; }
+.candidate-edit-fields textarea:focus { border-color: #b83243; outline: 2px solid rgba(184, 50, 67, .12); }
+.candidate-edit-fields textarea:disabled { opacity: .6; }
+.candidate-edit-fields input[type="file"] { height: auto; padding: 6px; font-size: 8px; }
+.candidate-edit-fields input[type="file"]::file-selector-button { margin-right: 7px; padding: 6px 8px; border: 1px solid #eadbdd; border-radius: 5px; color: #a93646; background: #fff8f8; font: inherit; cursor: pointer; }
+.candidate-edit-fields > label small { margin-left: 3px; color: #929a91; font-size: 7px; font-weight: 500; }
+.mpk-member-edit-row { display: flex; gap: 7px; margin: 8px 0; }
+.mpk-member-edit-row input { min-width: 0; flex: 1; height: 34px; padding: 0 9px; border: 1px solid #e5e6df; border-radius: 6px; color: #34483e; background: #fff; font: inherit; font-size: 10px; }
+.mpk-member-edit-row input:focus { border-color: #b83243; outline: 2px solid rgba(184, 50, 67, .12); }
+.mpk-member-edit-row input:disabled { opacity: .6; }
+.remove-member-button { width: 34px; flex: 0 0 auto; border: 1px solid #f0d7d9; border-radius: 6px; color: #ae3443; background: #fff7f7; font-size: 18px; cursor: pointer; }
+.remove-member-button:disabled { opacity: .6; cursor: not-allowed; }
+.add-member-button { width: 100%; min-height: 34px; margin-top: 7px; border: 1px dashed #d8b8ba; border-radius: 6px; color: #a93646; background: #fffafa; font-size: 9px; font-weight: 700; cursor: pointer; }
+.add-member-button:disabled { opacity: .6; cursor: not-allowed; }
+.mpk-member-editor { margin: 10px 0; padding: 10px; border: 1px solid #f0e9e7; border-radius: 8px; background: #fff; }
+.mpk-member-profile { display: grid; gap: 10px; }
+.mpk-member-profile label { display: grid; gap: 5px; color: #647168; font-size: 8px; font-weight: 700; }
+.mpk-member-profile label small { margin-left: 3px; color: #929a91; font-size: 7px; font-weight: 500; }
+.mpk-member-profile input[type="file"] { width: 100%; min-width: 0; color: #78827d; font-size: 8px; }
+.mpk-member-profile input[type="file"]::file-selector-button { margin-right: 7px; padding: 6px 8px; border: 1px solid #eadbdd; border-radius: 5px; color: #a93646; background: #fff8f8; font: inherit; cursor: pointer; }
+.mpk-member-profile textarea { width: 100%; min-width: 0; resize: vertical; padding: 8px; border: 1px solid #e5e6df; border-radius: 6px; color: #34483e; background: #fff; font: inherit; font-size: 9px; line-height: 1.5; }
+.mpk-member-profile textarea:focus { border-color: #b83243; outline: 2px solid rgba(184, 50, 67, .12); }
+.mpk-member-profile textarea:disabled { opacity: .6; }
+.mpk-member-photo-preview { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; }
+.mpk-member-photo-preview img { width: 64px; height: 64px; object-fit: cover; border: 1px solid #eee6e3; border-radius: 6px; }
+.remove-photo-button { min-height: 28px; padding: 0 8px; border: 1px solid #f0d7d9; border-radius: 5px; color: #a93646; background: #fff7f7; font-size: 8px; cursor: pointer; }
+.remove-photo-button:disabled { opacity: .6; cursor: wait; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .results-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-top: 17px; }
 .results-card {
   min-width: 0;
@@ -563,6 +617,27 @@ a { color: inherit; text-decoration: none; }
 .results-total strong { display: block; color: #374b3e; font: 800 17px "Nunito", sans-serif; }
 .results-total small { display: block; margin-top: 1px; color: #939b92; font-size: 8px; }
 .results-candidates { display: grid; gap: 15px; padding-top: 16px; }
+.mpk-results-positions { display: grid; gap: 14px; }
+.mpk-results-position { padding-top: 14px; border-bottom: 1px solid #f0f0eb; padding-bottom: 14px; }
+.mpk-results-position h3 { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: #536157; font-size: 9px; }
+.mpk-results-position h3 small { color: #939b92; font-size: 8px; font-weight: 500; }
+.mpk-results-position .results-candidates { gap: 11px; padding-top: 11px; }
+.mpk-vote-instructions { margin: 0 0 16px; color: #818a83; font-size: 10px; line-height: 1.6; }
+.mpk-position-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.mpk-position-card { min-width: 0; padding: 14px; border: 1px solid #e9ebe4; border-radius: 9px; background: #fff; }
+.mpk-position-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; padding-bottom: 10px; border-bottom: 1px solid #f0f0eb; }
+.mpk-position-heading h3 { margin: 0; color: #34483e; font-size: 11px; }
+.mpk-position-heading > span { color: #929a91; font-size: 8px; }
+.mpk-position-heading .mpk-choice-saved { color: #4a693c; font-weight: 700; }
+.mpk-selected-member { margin: 10px 0 0; color: #a93646; font-size: 10px; font-weight: 700; }
+.mpk-member-list { display: grid; gap: 7px; margin-top: 11px; }
+.mpk-member-option { display: flex; align-items: center; gap: 9px; min-height: 46px; padding: 6px 9px; border: 1px solid #e9ebe4; border-radius: 7px; background: #fff; text-align: left; cursor: pointer; }
+.mpk-member-option:hover:not(:disabled), .mpk-member-option.selected { border-color: #c94d5b; background: #fff8f8; }
+.mpk-member-option:disabled { cursor: not-allowed; opacity: .66; }
+.mpk-member-option strong { min-width: 0; flex: 1; color: #46564b; font-size: 9px; }
+.mpk-member-avatar { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: #495448; font-size: 8px; font-weight: 700; }
+.mpk-member-avatar.rose { background: #f1d8d8; }.mpk-member-avatar.blue { background: #dce5f1; }.mpk-member-avatar.yellow { background: #f0e9c9; }.mpk-member-avatar.mint { background: #dbece2; }.mpk-member-avatar.peach { background: #f2dfd3; }.mpk-member-avatar.lilac { background: #e8def1; }
+.mpk-member-check { width: 19px; color: #a93646; font-size: 14px; text-align: center; }
 .result-candidate-copy { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #536157; font-size: 9px; }
 .result-candidate-copy > span { display: flex; min-width: 0; align-items: center; gap: 7px; }
 .result-number { color: #a2aaa0; font-size: 8px; }
@@ -607,6 +682,9 @@ a { color: inherit; text-decoration: none; }
   .election-note-icon { width: 29px; height: 29px; }
   .visual-footnote { bottom: 17px; left: 23px; max-width: 125px; font-size: 6px; line-height: 1.5; }
   .results-grid { grid-template-columns: 1fr; gap: 10px; }
+  .candidate-management-grid { grid-template-columns: 1fr; }
+  .mpk-position-grid { grid-template-columns: 1fr; }
+  .candidate-management-heading { align-items: flex-start; flex-direction: column; }
   .admin-welcome { padding: 25px 0 18px; }
   .admin-total-caption { max-width: 140px; text-align: right; line-height: 1.5; }
 }
@@ -614,4 +692,78 @@ a { color: inherit; text-decoration: none; }
   .admin-welcome h1 { font-size: 25px; }
   .admin-total-card { gap: 11px; padding: 15px; }
   .admin-total-caption { max-width: 115px; font-size: 8px; }
+}
+.mpk-poster-content { padding-bottom: 125px; }
+.mpk-poster-page { padding: 42px 0 34px; }
+.mpk-poster-heading { position: relative; margin-bottom: 24px; padding: 29px 32px; border: 1px solid #f1dfdf; border-radius: 14px; background: radial-gradient(ellipse at 92% 10%, rgba(201, 50, 70, .1), transparent 34%), linear-gradient(120deg, #fff 20%, #fff8f8); }
+.mpk-poster-heading .eyebrow { color: #a76b70; }
+.mpk-poster-heading .live-dot { background: #c93246; box-shadow: 0 0 0 3px rgba(201, 50, 70, .12); }
+.mpk-poster-heading h1 { margin: 11px 0 6px; color: #37282b; font: 800 clamp(27px, 4vw, 39px)/1.1 "Nunito", "DM Sans", sans-serif; letter-spacing: -1.3px; }
+.mpk-poster-heading > p { margin: 0; color: #897a7b; font-size: 11px; }
+.mpk-poster-notice { margin-top: 16px; padding: 10px 12px; border: 1px solid #f1e2c6; border-radius: 7px; color: #795a2d; background: #fffaf0; font-size: 9px; line-height: 1.5; }
+.mpk-poster-count { position: absolute; top: 31px; right: 32px; padding: 8px 11px; border: 1px solid #f0d7d9; border-radius: 20px; color: #a93646; background: #fff; font-size: 9px; font-weight: 700; }
+.mpk-poster-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 13px; }
+.mpk-poster-card { min-width: 0; overflow: hidden; padding: 0; border: 1px solid #e9ebe4; border-radius: 11px; background: #fff; text-align: left; box-shadow: 0 5px 16px rgba(32, 54, 43, .035); transition: transform .18s, border-color .18s, box-shadow .18s; }
+.mpk-poster-card:not(:disabled) { cursor: pointer; }
+.mpk-poster-card:not(:disabled):hover { transform: translateY(-3px); border-color: #d7a1a7; box-shadow: 0 10px 22px rgba(115, 49, 56, .09); }
+.mpk-poster-card.selected { border-color: #bd3548; box-shadow: 0 0 0 2px rgba(189, 53, 72, .12); }
+.mpk-poster-card-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; color: #9c7376; font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.mpk-poster-card-top strong { display: grid; width: 23px; height: 23px; place-items: center; border-radius: 50%; color: #a93646; background: #fff0f1; font-size: 9px; }
+.mpk-poster-portrait { position: relative; display: grid; height: 152px; margin: 0 9px; overflow: hidden; place-items: center; border-radius: 7px; background: linear-gradient(145deg, color-mix(in srgb, currentColor 12%, white), color-mix(in srgb, currentColor 35%, white)); }
+.mpk-poster-portrait::before,.mpk-poster-portrait::after { position: absolute; width: 125px; height: 125px; border: 1px solid rgba(255,255,255,.62); border-radius: 50%; content: ""; }
+.mpk-poster-portrait::before { top: 19px; left: -61px; }
+.mpk-poster-portrait::after { right: -66px; bottom: -72px; width: 170px; height: 170px; }
+.mpk-poster-portrait svg { position: relative; z-index: 1; width: 100%; height: 100%; padding: 13px 10px 0; }
+.mpk-poster-portrait .mpk-poster-photo { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.mpk-poster-photo-label { position: absolute; right: 7px; bottom: 7px; z-index: 2; padding: 4px 6px; border-radius: 4px; color: #745a59; background: rgba(255,255,255,.86); font-size: 6px; font-weight: 800; letter-spacing: .6px; }
+.mpk-poster-card-content { display: flex; flex-direction: column; padding: 11px 11px 0; }
+.mpk-poster-name { min-height: 31px; color: #35473d; font: 800 12px/1.3 "Manrope", sans-serif; overflow-wrap: anywhere; }
+.mpk-poster-unregistered { margin: 4px 0 3px; color: #a1662a; font-size: 7px; font-weight: 700; line-height: 1.4; }
+.mpk-poster-copy-label { margin-top: 9px; color: #a93646; font-size: 7px; font-weight: 800; letter-spacing: .65px; text-transform: uppercase; }
+.mpk-poster-vision { margin-top: 4px; color: #657269; font-size: 8px; line-height: 1.5; }
+.mpk-poster-missions { display: grid; gap: 4px; margin-top: 5px; }
+.mpk-poster-missions > span { position: relative; padding-left: 10px; color: #657269; font-size: 7px; line-height: 1.45; }
+.mpk-poster-missions > span::before { position: absolute; top: 0; left: 0; color: #bd3548; content: "•"; }
+.mpk-poster-select { display: block; margin: 11px 10px 10px; padding: 8px 5px; border: 1px solid #eee6e3; border-radius: 6px; color: #738076; font-size: 8px; font-weight: 700; text-align: center; }
+.mpk-poster-card.selected .mpk-poster-select { border-color: #bd3548; color: #fff; background: #bd3548; }
+.mpk-poster-card.unregistered { background: #fbfbf9; }
+.mpk-poster-card.unregistered .mpk-poster-portrait { filter: saturate(.55); }
+.mpk-poster-card:disabled { cursor: not-allowed; }
+.mpk-poster-action-bar { position: fixed; z-index: 8; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 83px; padding: 13px max(calc((100vw - 1060px) / 2), 32px); border-top: 1px solid #eee4e3; background: rgba(255,255,255,.97); box-shadow: 0 -7px 25px rgba(36, 45, 37, .07); backdrop-filter: blur(12px); }
+.mpk-poster-action-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.mpk-poster-action-copy strong { overflow: hidden; color: #35473d; font: 800 12px "Manrope", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.mpk-poster-action-copy span { color: #8b948b; font-size: 8px; }
+.mpk-poster-action-button { min-width: 220px; padding: 0 17px; background: #c93246; }
+.mpk-poster-action-button:hover:not(:disabled) { background: #ad293b; }
+.mpk-poster-action-button:disabled { opacity: .58; cursor: not-allowed; }
+@media (max-width: 900px) {
+  .mpk-poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .mpk-poster-content { width: calc(100% - 36px); padding-bottom: 116px; }
+  .mpk-poster-page { padding-top: 24px; }
+  .mpk-poster-heading { padding: 23px 20px; }
+  .mpk-poster-heading h1 { max-width: 70%; }
+  .mpk-poster-count { top: 25px; right: 18px; font-size: 8px; }
+  .mpk-poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .mpk-poster-portrait { height: 155px; }
+  .mpk-poster-action-bar { min-height: 76px; gap: 10px; padding: 10px 18px; }
+  .mpk-poster-action-button { min-width: 0; min-height: 43px; padding: 0 12px; font-size: 9px; }
+}
+@media (max-width: 420px) {
+  .mpk-poster-heading { padding: 20px 14px; }
+  .mpk-poster-heading h1 { max-width: 100%; padding-right: 0; font-size: 27px; }
+  .mpk-poster-count { position: static; display: inline-block; margin-top: 11px; }
+  .mpk-poster-grid { gap: 8px; }
+  .mpk-poster-portrait { height: 125px; margin: 0 6px; }
+  .mpk-poster-card-top { padding: 8px; font-size: 6px; }
+  .mpk-poster-card-content { padding: 9px 8px 0; }
+  .mpk-poster-name { font-size: 10px; }
+  .mpk-poster-vision { font-size: 7px; }
+  .mpk-poster-missions > span { font-size: 6px; }
+  .mpk-poster-select { margin-right: 7px; margin-left: 7px; }
+  .mpk-poster-action-bar { align-items: stretch; flex-direction: column; gap: 7px; padding: 9px 13px; }
+  .mpk-poster-action-copy { display: none; }
+  .mpk-poster-action-button { width: 100%; }
+  .mpk-poster-content { padding-bottom: 85px; }
 }

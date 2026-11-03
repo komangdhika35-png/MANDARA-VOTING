@@ -41,6 +41,46 @@ export async function POST(request: Request) {
       database.exec("BEGIN IMMEDIATE");
       transactionOpen = true;
 
+      if (organizationId === "mpk") {
+        const choices = database
+          .prepare("SELECT position, member_id FROM mpk_choices WHERE nis = ?")
+          .all(nis) as { position: string; member_id: string }[];
+
+        if (choices.length === 0) {
+          database.exec("ROLLBACK");
+          transactionOpen = false;
+          return NextResponse.json(
+            { error: "Pilihan MPK siswa tidak ditemukan atau sudah direset." },
+            { status: 404 },
+          );
+        }
+
+        const deleteBallot = database.prepare(
+          `DELETE FROM mpk_ballots
+           WHERE ballot_id = (
+             SELECT ballot_id
+             FROM mpk_ballots
+             WHERE position = ? AND member_id = ?
+             LIMIT 1
+           )`,
+        );
+        for (const choice of choices) {
+          const ballot = deleteBallot.run(choice.position, choice.member_id);
+          if (ballot.changes !== 1) {
+            throw new Error(`Surat suara MPK untuk jabatan ${choice.position} tidak ditemukan.`);
+          }
+        }
+
+        database.prepare("DELETE FROM mpk_choices WHERE nis = ?").run(nis);
+        database
+          .prepare("DELETE FROM participation WHERE nis = ? AND organization_id = 'mpk'")
+          .run(nis);
+        database.prepare("DELETE FROM sessions WHERE nis = ?").run(nis);
+        database.exec("COMMIT");
+        transactionOpen = false;
+        return NextResponse.json({ success: true });
+      }
+
       const choice = database
         .prepare(
           `SELECT voter_choices.candidate_id

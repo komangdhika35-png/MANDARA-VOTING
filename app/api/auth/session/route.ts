@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteSession, getAdminSession, getSessionVoter } from "@/lib/auth";
+import { getMpkSelections } from "@/lib/candidates";
 import { getDatabase } from "@/lib/db";
 import { organizationIds } from "@/lib/election";
 
@@ -23,6 +24,7 @@ export async function GET() {
     return NextResponse.json({
       role: "student",
       voter: { name: voter.name },
+      mpkSelections: getMpkSelections(voter.nis),
       votedOrganizations: rows
         .map((row) => row.organization_id)
         .filter((id) => organizationIds.includes(id as (typeof organizationIds)[number])),
