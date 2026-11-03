@@ -2,7 +2,9 @@
 
 Portal pemilihan ketua MPK, OSIS, dan KY yang dibuat dengan Next.js. Data pemilih dan hasil suara disimpan di database SQLite pada server yang menjalankan aplikasi.
 
-Setiap organisasi menampilkan tiga pasangan calon ketua dan wakil ketua. Nama kandidat saat ini adalah nama contoh dan perlu diganti dengan data calon yang sudah disetujui sebelum pemilihan dimulai.
+Untuk MPK, admin mengelola daftar calon ketua dari kelas 11 dan daftar calon wakil dari kelas 10 secara terpisah. Pemilih memilih satu nama dari setiap kategori. OSIS dan KY menggunakan tiga pasangan calon yang dapat diatur admin.
+
+Admin mengelola kedua daftar MPK pada bagian **Atur kandidat**. Daftar MPK dikunci setelah pilihan pertama tercatat agar suara tetap merujuk ke calon yang benar. Jika database memiliki suara MPK dari format pasangan calon sebelumnya, saat aplikasi dibuka suara tersebut dipindahkan ke rekap ketua dan wakil sesuai pasangan yang telah dipilih.
 
 ## Menjalankan aplikasi
 
@@ -19,7 +21,7 @@ Buka `http://localhost:3000`. Untuk menjalankan versi produksi, gunakan `npm run
 
 Siswa masuk hanya dengan NIS yang terdaftar di database. Ketik username `admin` pada halaman login untuk menampilkan kolom password dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Halaman admin menampilkan rekap jumlah suara, nama siswa beserta pilihannya, dan daftar siswa yang belum memilih untuk setiap organisasi.
 
-Admin dapat memilih **Reset** di samping pemilih untuk menghapus suara siswa pada organisasi tersebut. Tindakan ini harus dikonfirmasi, mengurangi rekap suara pasangan yang dipilih, dan mengakhiri sesi login siswa tersebut. Siswa perlu masuk kembali untuk memilih ulang. Reset dilakukan satu organisasi sekaligus.
+Admin dapat memilih **Reset** di samping pemilih untuk menghapus suara siswa pada organisasi tersebut. Untuk MPK, reset menghapus pilihan ketua dan/atau wakil yang sudah tercatat. Tindakan ini harus dikonfirmasi, memperbarui rekap suara, dan mengakhiri sesi login siswa tersebut. Siswa perlu masuk kembali untuk memilih ulang. Reset dilakukan satu organisasi sekaligus.
 
 Untuk mengimpor daftar dari Excel, jalankan perintah berikut di terminal pada folder proyek (ganti alamat file sesuai lokasi workbook):
 

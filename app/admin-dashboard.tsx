@@ -1,13 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type {
+  CandidateConfigurations,
+  ElectionCandidates,
+  MpkMember,
+  OrganizationId,
+} from "@/lib/election";
+
+type CandidateResult = { id: string; name: string; viceName?: string; number?: string; votes: number };
+type PositionResult = {
+  id: "chair" | "vice";
+  title: string;
+  totalVotes: number;
+  candidates: { id: string; name: string; votes: number }[];
+};
 
 type OrganizationResult = {
   id: string;
   name: string;
   fullName: string;
   totalVotes: number;
-  candidates: { id: string; name: string; viceName: string; votes: number }[];
+  hasAnyVotes: boolean;
+  candidates: CandidateResult[];
+  positions: PositionResult[];
   voters: { nis: string; name: string; candidateName: string }[];
   abstainers: string[];
 };
@@ -18,6 +34,7 @@ type Results = {
 };
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<void> }) {
+  const [activeAdminPage, setActiveAdminPage] = useState<"results" | "candidates">("results");
   const [results, setResults] = useState<Results | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -32,6 +49,97 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState("");
   const [resetMessage, setResetMessage] = useState("");
+  const [candidateConfigurations, setCandidateConfigurations] =
+    useState<CandidateConfigurations | null>(null);
+  const [mpkMembers, setMpkMembers] = useState<
+    Record<"chair" | "vice", MpkMember[]> | null
+  >(null);
+  const [candidateError, setCandidateError] = useState("");
+  const [candidateMessage, setCandidateMessage] = useState("");
+  const [savingCandidates, setSavingCandidates] = useState(false);
+
+  const loadCandidates = useCallback(async () => {
+    setCandidateError("");
+    try {
+      const response = await fetch("/api/election/candidates", { cache: "no-store" });
+      const data = (await response.json()) as Partial<ElectionCandidates> & { error?: string };
+      if (!response.ok || !data.organizations || !data.mpkMembers) {
+        throw new Error(data.error ?? "Gagal memuat pasangan calon.");
+      }
+      setCandidateConfigurations(data.organizations);
+      setMpkMembers(data.mpkMembers);
+    } catch (loadError) {
+      setCandidateError(
+        loadError instanceof Error ? loadError.message : "Tidak dapat memuat pasangan calon.",
+      );
+    }
+  }, []);
+
+  function updateCandidate(
+    organizationId: OrganizationId,
+    candidateId: string,
+    field: "name" | "viceName" | "number",
+    value: string,
+  ) {
+    setCandidateConfigurations((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        [organizationId]: current[organizationId].map((candidate) =>
+          candidate.id === candidateId ? { ...candidate, [field]: value } : candidate,
+        ),
+      };
+    });
+    setCandidateMessage("");
+  }
+
+  function updateMpkMember(position: "chair" | "vice", memberId: string, value: string) {
+    setMpkMembers((current) =>
+      current
+        ? {
+            ...current,
+            [position]: current[position].map((member) =>
+              member.id === memberId ? { ...member, name: value } : member,
+            ),
+          }
+        : null,
+    );
+    setCandidateMessage("");
+  }
+
+  async function saveCandidates() {
+    if (!candidateConfigurations || !mpkMembers) return;
+    setSavingCandidates(true);
+    setCandidateError("");
+    setCandidateMessage("");
+    try {
+      const response = await fetch("/api/admin/candidates", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizations: candidateConfigurations, mpkMembers }),
+      });
+      const data = (await response.json()) as {
+        organizations?: CandidateConfigurations;
+        mpkMembers?: Record<"chair" | "vice", MpkMember[]>;
+        error?: string;
+      };
+      if (!response.ok || !data.organizations || !data.mpkMembers) {
+        throw new Error(data.error ?? "Perubahan pasangan calon belum dapat disimpan.");
+      }
+      setCandidateConfigurations(data.organizations);
+      setMpkMembers(data.mpkMembers);
+      setCandidateMessage("Perubahan kandidat berhasil disimpan.");
+      await loadResults();
+    } catch (saveError) {
+      setCandidateError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Tidak dapat menyimpan pasangan calon. Silakan coba lagi.",
+      );
+    } finally {
+      setSavingCandidates(false);
+    }
+  }
 
   async function handleLogout() {
     setLogoutError("");
@@ -99,12 +207,15 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
   useEffect(() => {
     let active = true;
     queueMicrotask(() => {
-      if (active) void loadResults();
+      if (active) {
+        void loadResults();
+        void loadCandidates();
+      }
     });
     return () => {
       active = false;
     };
-  }, [loadResults]);
+  }, [loadCandidates, loadResults]);
 
   return (
     <main className="app-page admin-page">
@@ -124,19 +235,237 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
         <section className="admin-welcome">
           <div>
             <span className="eyebrow dark-eyebrow"><span className="live-dot" /> HALAMAN ADMIN</span>
-            <h1>Rekap suara</h1>
-            <p>Ringkasan pilihan untuk setiap organisasi.</p>
+            <h1>{activeAdminPage === "results" ? "Rekap suara" : "Pengaturan kandidat"}</h1>
+            <p>
+              {activeAdminPage === "results"
+                ? "Ringkasan pilihan untuk setiap organisasi."
+                : "Kelola daftar kandidat untuk setiap organisasi."}
+            </p>
           </div>
-          <button className="secondary-button refresh-button" onClick={() => void loadResults()} disabled={loading}>
-            <span aria-hidden="true">↻</span> {loading ? "Memuat..." : "Perbarui rekap"}
-          </button>
+          {activeAdminPage === "results" && (
+            <button className="secondary-button refresh-button" onClick={() => void loadResults()} disabled={loading}>
+              <span aria-hidden="true">↻</span> {loading ? "Memuat..." : "Perbarui rekap"}
+            </button>
+          )}
         </section>
 
+        <nav className="admin-page-nav" aria-label="Halaman admin">
+          <button
+            id="admin-results-tab"
+            className={activeAdminPage === "results" ? "active" : ""}
+            type="button"
+            aria-pressed={activeAdminPage === "results"}
+            onClick={() => setActiveAdminPage("results")}
+          >
+            Rekap suara
+          </button>
+          <button
+            id="admin-candidates-tab"
+            className={activeAdminPage === "candidates" ? "active" : ""}
+            type="button"
+            aria-pressed={activeAdminPage === "candidates"}
+            onClick={() => setActiveAdminPage("candidates")}
+          >
+            Pengaturan kandidat
+          </button>
+        </nav>
+
         {logoutError && <p className="form-error app-error" role="alert">{logoutError}</p>}
+
+        <section
+          id="admin-candidates-panel"
+          className="admin-page-panel"
+          aria-labelledby="admin-candidates-tab"
+          hidden={activeAdminPage !== "candidates"}
+        >
+        {candidateError && <p className="form-error app-error" role="alert">{candidateError}</p>}
+        {candidateMessage && <p className="admin-reset-notice" role="status">{candidateMessage}</p>}
+        <section className="candidate-management" aria-labelledby="candidate-management-title">
+          <div className="candidate-management-heading">
+            <div>
+              <span className="eyebrow dark-eyebrow">PENGATURAN PEMILIHAN</span>
+              <h2 id="candidate-management-title">Atur kandidat</h2>
+              <p>Kelola calon ketua MPK kelas 11, calon wakil MPK kelas 10, serta paslon OSIS dan KY.</p>
+            </div>
+            <button
+              className="primary-button candidate-save-button"
+              onClick={() => void saveCandidates()}
+              disabled={!candidateConfigurations || !mpkMembers || savingCandidates}
+            >
+              {savingCandidates ? "Menyimpan..." : "Simpan perubahan"}
+            </button>
+          </div>
+          <div className="candidate-management-grid">
+            {mpkMembers && (
+              <article className="candidate-management-card" key="mpk">
+                <h3>MPK · Daftar Calon per Jabatan</h3>
+                {(results?.organizations.find((organization) => organization.id === "mpk")
+                  ?.hasAnyVotes ?? false) && (
+                  <p className="candidate-locked-note">
+                    Daftar calon tidak dapat diubah karena suara sudah tercatat.
+                  </p>
+                )}
+                {(["chair", "vice"] as const).map((position) => {
+                  const positionTitle =
+                    position === "chair" ? "Calon Ketua MPK · Kelas 11" : "Calon Wakil MPK · Kelas 10";
+                  return (
+                    <section className="mpk-admin-category" key={position}>
+                      <h4>{positionTitle}</h4>
+                      {mpkMembers[position].map((member) => (
+                        <div className="mpk-member-edit-row" key={`${position}-${member.id}`}>
+                          <label className="sr-only" htmlFor={`${position}-${member.id}-name`}>
+                            {positionTitle}
+                          </label>
+                          <input
+                            id={`${position}-${member.id}-name`}
+                            maxLength={80}
+                            value={member.name}
+                            disabled={
+                              results?.organizations.find((organization) => organization.id === "mpk")
+                                ?.hasAnyVotes ?? false
+                            }
+                            onChange={(event) =>
+                              updateMpkMember(position, member.id, event.target.value)
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="remove-member-button"
+                            aria-label={`Hapus ${member.name} dari ${positionTitle}`}
+                            disabled={
+                              (results?.organizations.find(
+                                (organization) => organization.id === "mpk",
+                              )?.hasAnyVotes ?? false) ||
+                              mpkMembers[position].length <= 1
+                            }
+                            onClick={() =>
+                              setMpkMembers((current) =>
+                                current
+                                  ? {
+                                      ...current,
+                                      [position]: current[position].filter(
+                                        (item) => item.id !== member.id,
+                                      ),
+                                    }
+                                  : null,
+                              )
+                            }
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="add-member-button"
+                        disabled={
+                          (results?.organizations.find((organization) => organization.id === "mpk")
+                            ?.hasAnyVotes ?? false) ||
+                          mpkMembers.chair.length + mpkMembers.vice.length >= 200
+                        }
+                        onClick={() => {
+                          setMpkMembers((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  [position]: [
+                                    ...current[position],
+                                    { id: `mpk-member-${crypto.randomUUID()}`, name: "" },
+                                  ],
+                                }
+                              : null,
+                          );
+                          setCandidateMessage("");
+                        }}
+                      >
+                        + Tambah calon {position === "chair" ? "ketua" : "wakil"}
+                      </button>
+                    </section>
+                  );
+                })}
+              </article>
+            )}
+            {candidateConfigurations &&
+              (["osis", "ky"] as const).map((organizationId) => {
+                const hasVotes = (results?.organizations.find(
+                  (organization) => organization.id === organizationId,
+                )?.totalVotes ?? 0) > 0;
+                return (
+                  <article className="candidate-management-card" key={organizationId}>
+                    <h3>{organizationId.toUpperCase()}</h3>
+                    {hasVotes && (
+                      <p className="candidate-locked-note">
+                        Paslon tidak dapat diubah karena suara sudah tercatat.
+                      </p>
+                    )}
+                    {candidateConfigurations[organizationId].map((candidate, index) => (
+                      <fieldset
+                        className="candidate-edit-fields"
+                        key={candidate.id}
+                        disabled={hasVotes}
+                      >
+                        <legend>Paslon {index + 1}</legend>
+                        <label htmlFor={`${candidate.id}-name`}>Nama calon ketua</label>
+                        <input
+                          id={`${candidate.id}-name`}
+                          maxLength={80}
+                          value={candidate.name}
+                          onChange={(event) =>
+                            updateCandidate(
+                              organizationId,
+                              candidate.id,
+                              "name",
+                              event.target.value,
+                            )
+                          }
+                        />
+                        <label htmlFor={`${candidate.id}-vice`}>Nama calon wakil ketua</label>
+                        <input
+                          id={`${candidate.id}-vice`}
+                          maxLength={80}
+                          value={candidate.viceName}
+                          onChange={(event) =>
+                            updateCandidate(
+                              organizationId,
+                              candidate.id,
+                              "viceName",
+                              event.target.value,
+                            )
+                          }
+                        />
+                        <label htmlFor={`${candidate.id}-number`}>Nomor paslon (01-99)</label>
+                        <input
+                          id={`${candidate.id}-number`}
+                          inputMode="numeric"
+                          maxLength={2}
+                          value={candidate.number}
+                          onChange={(event) =>
+                            updateCandidate(
+                              organizationId,
+                              candidate.id,
+                              "number",
+                              event.target.value,
+                            )
+                          }
+                        />
+                      </fieldset>
+                    ))}
+                  </article>
+                );
+              })}
+          </div>
+        </section>
+        </section>
+
+        <section
+          id="admin-results-panel"
+          className="admin-page-panel"
+          aria-labelledby="admin-results-tab"
+          hidden={activeAdminPage !== "results"}
+        >
         {error && <p className="form-error app-error" role="alert">{error}</p>}
         {resetError && <p className="form-error app-error" role="alert">{resetError}</p>}
         {resetMessage && <p className="admin-reset-notice" role="status">{resetMessage}</p>}
-
         <section className="admin-total-card" aria-live="polite">
           <span className="admin-total-icon" aria-hidden="true">✓</span>
           <span><small>TOTAL SUARA TERCATAT</small><strong>{loading && !results ? "—" : results?.totalVotes ?? 0}</strong></span>
@@ -148,10 +477,12 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
 
         <section className="results-grid" aria-label="Rekap suara tiap organisasi">
           {results?.organizations.map((organization) => {
-            const leader = organization.candidates.reduce(
-              (current, candidate) => candidate.votes > current.votes ? candidate : current,
-              organization.candidates[0],
-            );
+            const leader = organization.candidates.length > 0
+            ? organization.candidates.reduce(
+                (current, candidate) => candidate.votes > current.votes ? candidate : current,
+                organization.candidates[0],
+              )
+            : null;
             return (
               <article className="results-card" key={organization.id}>
                 <header className="results-card-header">
@@ -162,10 +493,42 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     <strong>{organization.name}</strong>
                     <small>{organization.fullName}</small>
                   </span>
-                  <span className="results-total"><strong>{organization.totalVotes}</strong><small>suara</small></span>
+                  <span className="results-total">
+                    <strong>{organization.totalVotes}</strong>
+                    <small>{organization.id === "mpk" ? "pemilih lengkap" : "suara"}</small>
+                  </span>
                 </header>
+                {organization.positions.length > 0 ? (
+                  <div className="mpk-results-positions">
+                    {organization.positions.map((position) => (
+                      <section className="mpk-results-position" key={position.id}>
+                        <h3>{position.title} <small>{position.totalVotes} suara</small></h3>
+                        <div className="results-candidates">
+                          {position.candidates.map((candidate) => {
+                            const percentage = position.totalVotes
+                              ? Math.round((candidate.votes / position.totalVotes) * 100)
+                              : 0;
+                            return (
+                              <div className="result-candidate" key={candidate.id}>
+                                <div className="result-candidate-copy">
+                                  <span className="result-team-names"><strong>{candidate.name}</strong></span>
+                                  <strong>{candidate.votes} <small>({percentage}%)</small></strong>
+                                </div>
+                                <div className="result-track" role="progressbar"
+                                  aria-label={`Suara ${position.title} untuk ${candidate.name}`}
+                                  aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}>
+                                  <span style={{ width: `${percentage}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                ) : (
                 <div className="results-candidates">
-                  {organization.candidates.map((candidate, index) => {
+                  {organization.candidates.map((candidate) => {
                     const percentage = organization.totalVotes
                       ? Math.round((candidate.votes / organization.totalVotes) * 100)
                       : 0;
@@ -173,7 +536,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                       <div className="result-candidate" key={candidate.id}>
                         <div className="result-candidate-copy">
                           <span>
-                            <small className="result-number">0{index + 1}</small>
+                            <small className="result-number">{candidate.number}</small>
                             <span className="result-team-names">
                               <strong>{candidate.name}</strong>
                               <small>Wakil: {candidate.viceName}</small>
@@ -195,6 +558,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     );
                   })}
                 </div>
+                )}
                 <details className="voter-details">
                   <summary>Pemilih dan pilihannya ({organization.voters.length})</summary>
                   {organization.voters.length > 0 ? (
@@ -228,7 +592,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                   )}
                 </details>
                 <details className="voter-details abstainer-details">
-                  <summary>Belum memilih / golput ({organization.abstainers.length})</summary>
+                  <summary>
+                    {organization.id === "mpk"
+                      ? "Belum menyelesaikan pilihan"
+                      : "Belum memilih / golput"} ({organization.abstainers.length})
+                  </summary>
                   {organization.abstainers.length > 0 ? (
                     <ul>
                       {organization.abstainers.map((name, index) => (
@@ -239,7 +607,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                     <p>Semua pemilih terdaftar sudah memilih.</p>
                   )}
                 </details>
-                {organization.totalVotes > 0 && leader.votes > 0 && (
+                {leader && organization.totalVotes > 0 && leader.votes > 0 && (
                   <p className="results-leader">
                     Suara terbanyak sementara: <strong>{leader.name} &amp; {leader.viceName}</strong>
                   </p>
@@ -255,6 +623,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
           <span>© 2026 SUARA MANDARA</span>
           <span>Rekap ini diperbarui saat tombol perbarui ditekan.</span>
         </footer>
+        </section>
       </div>
       {resetTarget && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
