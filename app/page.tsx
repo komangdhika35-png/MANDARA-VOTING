@@ -194,24 +194,6 @@ function toVoteRecord(organizationIds: OrganizationId[]): VoteRecord {
   return record;
 }
 
-function playCompletionSound(audioContext: AudioContext) {
-  const startTime = audioContext.currentTime;
-  for (const [index, frequency] of [880, 1174.66].entries()) {
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const noteStart = startTime + index * 0.19;
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.0001, noteStart);
-    gain.gain.exponentialRampToValueAtTime(0.8, noteStart + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.17);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start(noteStart);
-    oscillator.stop(noteStart + 0.18);
-  }
-}
-
 export default function Home() {
   const [nis, setNis] = useState("");
   const [password, setPassword] = useState("");
@@ -221,7 +203,7 @@ export default function Home() {
   const [loginTransition, setLoginTransition] = useState<"forward" | "backward" | "">("");
   const adminPasswordRef = useRef<HTMLInputElement>(null);
   const studentPasswordRef = useRef<HTMLInputElement>(null);
-  const completionAudioContextRef = useRef<AudioContext | null>(null);
+  const completionAudioRef = useRef<HTMLAudioElement | null>(null);
   const [voter, setVoter] = useState("");
   const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [activeOrganization, setActiveOrganization] =
@@ -487,19 +469,6 @@ export default function Home() {
     if (!selectedCandidate || votes[activeOrganization]) return;
     setIsSubmitting(true);
     setAppError("");
-    let audioContext: AudioContext | null = null;
-    try {
-      const AudioContextConstructor = window.AudioContext;
-      if (AudioContextConstructor) {
-        audioContext =
-          completionAudioContextRef.current ??
-          new AudioContextConstructor();
-        completionAudioContextRef.current = audioContext;
-        if (audioContext.state === "suspended") await audioContext.resume();
-      }
-    } catch (error) {
-      console.warn("Audio konfirmasi pemilihan tidak tersedia:", error);
-    }
     try {
       const response = await fetch("/api/votes", {
         method: "POST",
@@ -520,13 +489,13 @@ export default function Home() {
       if (!response.ok) throw new Error(data.error ?? "Suara belum dapat disimpan.");
 
       const completedOrganizations = new Set(data.votedOrganizations ?? []);
-      if (
-        audioContext?.state === "running" &&
-        electionOrganizations.every((organization) =>
-          completedOrganizations.has(organization.id),
-        )
-      ) {
-        playCompletionSound(audioContext);
+      if (electionOrganizations.every((organization) => completedOrganizations.has(organization.id))) {
+        const completionAudio = completionAudioRef.current ?? new Audio("/booyah-free-fire.mp3");
+        completionAudioRef.current = completionAudio;
+        completionAudio.currentTime = 0;
+        void completionAudio.play().catch((error: unknown) => {
+          console.warn("Audio konfirmasi pemilihan tidak dapat diputar:", error);
+        });
       }
 
       setVotes(toVoteRecord(data.votedOrganizations ?? []));
@@ -810,7 +779,7 @@ export default function Home() {
               </span>
             </header>
             {appError && <p className="form-error app-error [margin:-7px_0_10px] [color:#b6473d] [font-size:10px] [width:fit-content] [margin:14px_0_0] [padding:9px_12px] [border:1px_solid_#f0d7d9] [border-radius:6px] [background:#fff7f7]" role="alert">{appError}</p>}
-            <div className="mpk-poster-grid [display:grid] [grid-template-columns:repeat(5,_minmax(0,_1fr))] [gap:13px] max-[900px]:[grid-template-columns:repeat(3,_minmax(0,_1fr))] max-[760px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[760px]:[gap:10px] max-[420px]:[gap:8px]">
+            <div className="mpk-poster-grid [display:grid] [grid-template-columns:repeat(3,_minmax(0,_1fr))] [gap:16px] max-[900px]:[grid-template-columns:repeat(3,_minmax(0,_1fr))] max-[760px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[760px]:[gap:10px] max-[420px]:[gap:8px]">
               {Array.from({ length: Math.max(10, mpkPosterCandidates.length) }, (_, index) => {
                 const candidate = mpkPosterCandidates[index];
                 const program = mpkPosterPrograms[index % mpkPosterPrograms.length];
@@ -860,17 +829,22 @@ export default function Home() {
                       )}
                       <span className="mpk-poster-photo-label [position:absolute] [right:7px] [bottom:7px] [z-index:2] [padding:4px_6px] [border-radius:4px] [color:#745a59] [background:rgba(255,255,255,.86)] [font-size:6px] [font-weight:800] [letter-spacing:.6px]">{candidate?.photoDataUrl ? "FOTO" : "ILUSTRASI"}</span>
                     </span>
-                    <span className="mpk-poster-card-content [display:flex] [flex-direction:column] [padding:11px_11px_0] max-[420px]:[padding:9px_8px_0]">
-                      <strong className="mpk-poster-name [min-height:31px] [color:#35473d] [font:800_12px/1.3_'Manrope',_sans-serif] [overflow-wrap:anywhere] max-[420px]:[font-size:10px]">{candidateName}</strong>
+                    <span className="mpk-poster-card-content [display:flex] [flex-direction:column] [padding:12px_12px_0] max-[420px]:[padding:10px_9px_0]">
+                      <strong className="mpk-poster-name [min-height:38px] [color:#35473d] [font:800_15px/1.35_'Manrope',_sans-serif] [overflow-wrap:anywhere] max-[420px]:[min-height:32px] max-[420px]:[font-size:12px]">{candidateName}</strong>
+                      <span className="[width:24px] [height:2px] [margin-top:5px] [border-radius:2px] [background:#eadcda]" aria-hidden="true" />
                       {!candidate && <span className="mpk-poster-unregistered [margin:4px_0_3px] [color:#a1662a] [font-size:7px] [font-weight:700] [line-height:1.4]">Belum terdaftar oleh admin</span>}
-                      <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Visi{vision ? "" : " · Contoh"}</span>
-                      <span className="mpk-poster-vision [margin-top:4px] [color:#657269] [font-size:8px] [line-height:1.5] max-[420px]:[font-size:7px]">{vision || program.vision}</span>
-                      <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Misi{mission ? "" : " · Contoh"}</span>
-                      <span className="mpk-poster-missions [display:grid] [gap:4px] [margin-top:5px] [&_>_span]:[position:relative] [&_>_span]:[padding-left:10px] [&_>_span]:[color:#657269] [&_>_span]:[font-size:7px] [&_>_span]:[line-height:1.45] [&_>_span::before]:[position:absolute] [&_>_span::before]:[top:0] [&_>_span::before]:[left:0] [&_>_span::before]:[color:#bd3548] [&_>_span::before]:[content:'•'] max-[420px]:[&_>_span]:[font-size:6px]">
-                        {(mission
-                          ? mission.split(/\n+/).map((item) => item.trim()).filter(Boolean)
-                          : program.missions
-                        ).map((item) => <span key={item}>{item}</span>)}
+                      <span className="candidate-profile-block [display:flex] [flex-direction:column] [gap:5px] [margin-top:12px] [padding:7px_0]">
+                        <span className="mpk-poster-copy-label [display:flex] [align-items:center] [gap:5px] [color:#a93646] [font-size:8px] [font-weight:800] [letter-spacing:.8px] [text-transform:uppercase]"><span className="[width:5px] [height:5px] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Visi{vision ? "" : " · Contoh"}</span>
+                        <span className="mpk-poster-vision [color:#4b5a51] [font-size:11px] [line-height:1.65] [overflow-wrap:anywhere] max-[420px]:[font-size:10px]">{vision || program.vision}</span>
+                      </span>
+                      <span className="candidate-profile-block [display:flex] [flex-direction:column] [gap:5px] [margin-top:8px] [padding:7px_0]">
+                        <span className="mpk-poster-copy-label [display:flex] [align-items:center] [gap:5px] [color:#a93646] [font-size:8px] [font-weight:800] [letter-spacing:.8px] [text-transform:uppercase]"><span className="[width:5px] [height:5px] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Misi{mission ? "" : " · Contoh"}</span>
+                        <span className="mpk-poster-missions [display:grid] [gap:6px] [&_>_span]:[position:relative] [&_>_span]:[padding-left:13px] [&_>_span]:[color:#4b5a51] [&_>_span]:[font-size:10px] [&_>_span]:[line-height:1.6] [&_>_span]:[overflow-wrap:anywhere] [&_>_span::before]:[position:absolute] [&_>_span::before]:[top:0] [&_>_span::before]:[left:0] [&_>_span::before]:[color:#bd3548] [&_>_span::before]:[content:'•'] max-[420px]:[&_>_span]:[font-size:9px]">
+                          {(mission
+                            ? mission.split(/\n+/).map((item) => item.trim()).filter(Boolean)
+                            : program.missions
+                          ).map((item) => <span key={item}>{item}</span>)}
+                        </span>
                       </span>
                     </span>
                     <span className={`mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px] ${isSelected ? "[border-color:#bd3548] [color:#fff] [background:#bd3548]" : ""}`}>
@@ -951,20 +925,24 @@ export default function Home() {
                       )}
                       <span className="mpk-poster-photo-label [position:absolute] [right:7px] [bottom:7px] [z-index:2] [padding:4px_6px] [border-radius:4px] [color:#745a59] [background:rgba(255,255,255,.86)] [font-size:6px] [font-weight:800] [letter-spacing:.6px]">{candidate.photoDataUrl ? "FOTO" : "ILUSTRASI"}</span>
                     </span>
-                    <span className="pair-poster-names [display:grid] [grid-template-columns:1fr_auto_1fr] [align-items:center] [gap:8px] [padding:17px_18px_0] [text-align:center] [&_>_span:not(.pair-poster-plus)]:[display:flex] [&_>_span:not(.pair-poster-plus)]:[min-width:0] [&_>_span:not(.pair-poster-plus)]:[flex-direction:column] [&_>_span:not(.pair-poster-plus)]:[gap:5px] [&_small]:[color:#a93646] [&_small]:[font-size:7px] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.7px] [&_strong]:[color:#35473d] [&_strong]:[font:800_13px/1.35_'Manrope',_sans-serif] [&_strong]:[overflow-wrap:anywhere] max-[760px]:[padding:14px_12px_0] max-[420px]:[&_strong]:[font-size:12px]">
-                      <span><small>CALON KETUA</small><strong>{candidate.name}</strong></span>
-                      <span className="pair-poster-plus [color:#bd3548] [font:700_14px_'Manrope',_sans-serif]" aria-hidden="true">&amp;</span>
-                      <span><small>CALON WAKIL</small><strong>{candidate.viceName}</strong></span>
+                    <span className="pair-poster-names [display:grid] [width:100%] [grid-template-columns:minmax(0,_1fr)_40px_minmax(0,_1fr)] [align-items:center] [column-gap:12px] [row-gap:10px] [padding:19px_24px_0] [text-align:center] [&_>_span:not(.pair-poster-plus)]:[display:flex] [&_>_span:not(.pair-poster-plus)]:[width:100%] [&_>_span:not(.pair-poster-plus)]:[min-width:0] [&_>_span:not(.pair-poster-plus)]:[align-items:center] [&_>_span:not(.pair-poster-plus)]:[flex-direction:column] [&_>_span:not(.pair-poster-plus)]:[gap:7px] [&_small]:[color:#a93646] [&_small]:[font-size:9px] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.8px] [&_strong]:[color:#35473d] [&_strong]:[font:800_16px/1.4_'Manrope',_sans-serif] [&_strong]:[overflow-wrap:anywhere] max-[760px]:[grid-template-columns:minmax(0,_1fr)_36px_minmax(0,_1fr)] max-[760px]:[column-gap:8px] max-[760px]:[padding:16px_18px_0] max-[420px]:[grid-template-columns:minmax(0,_1fr)_28px_minmax(0,_1fr)] max-[420px]:[column-gap:5px] max-[420px]:[padding:14px_12px_0] max-[420px]:[&_small]:[font-size:8px] max-[420px]:[&_strong]:[font-size:13px]">
+                      <span><small>CALON KETUA</small><strong>{candidate.name}</strong><i className="[display:block] [width:24px] [height:2px] [margin:2px_auto_0] [border-radius:2px] [background:#eadcda]" aria-hidden="true" /></span>
+                      <span className="pair-poster-plus [display:grid] [width:40px] [align-self:stretch] [place-items:center] [justify-self:center] [margin:0] [color:#bd3548] [font:800_20px_'Manrope',_sans-serif] [line-height:1] [text-align:center] max-[760px]:[width:36px] max-[420px]:[width:28px]" aria-hidden="true">&amp;</span>
+                      <span><small>CALON WAKIL</small><strong>{candidate.viceName}</strong><i className="[display:block] [width:24px] [height:2px] [margin:2px_auto_0] [border-radius:2px] [background:#eadcda]" aria-hidden="true" /></span>
                     </span>
-                    <span className="pair-poster-profile [display:flex] [flex-direction:column] [padding:0_18px] [&_.mpk-poster-vision]:[min-height:36px] [&_.mpk-poster-vision]:[font-size:10px] [&_.mpk-poster-missions_>_span]:[font-size:9px] max-[420px]:[&_.mpk-poster-vision]:[font-size:9px] max-[420px]:[&_.mpk-poster-missions_>_span]:[font-size:8px] max-[760px]:[padding:0_12px]">
-                      <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Visi{vision ? "" : " · Contoh"}</span>
-                      <span className="mpk-poster-vision [margin-top:4px] [color:#657269] [font-size:8px] [line-height:1.5] max-[420px]:[font-size:7px]">{vision || candidate.program}</span>
-                      <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Misi{mission ? "" : " · Contoh"}</span>
-                      <span className="mpk-poster-missions [display:grid] [gap:4px] [margin-top:5px] [&_>_span]:[position:relative] [&_>_span]:[padding-left:10px] [&_>_span]:[color:#657269] [&_>_span]:[font-size:7px] [&_>_span]:[line-height:1.45] [&_>_span::before]:[position:absolute] [&_>_span::before]:[top:0] [&_>_span::before]:[left:0] [&_>_span::before]:[color:#bd3548] [&_>_span::before]:[content:'•'] max-[420px]:[&_>_span]:[font-size:6px]">
-                        {(mission
-                          ? mission.split(/\n+/).map((item) => item.trim()).filter(Boolean)
-                          : [candidate.motto]
-                        ).map((item) => <span key={item}>{item}</span>)}
+                    <span className="pair-poster-profile [display:flex] [flex-direction:column] [padding:0_18px] max-[760px]:[padding:0_12px]">
+                      <span className="candidate-profile-block [display:flex] [flex-direction:column] [gap:5px] [margin-top:13px] [padding:7px_0]">
+                        <span className="mpk-poster-copy-label [display:flex] [align-items:center] [gap:5px] [color:#a93646] [font-size:8px] [font-weight:800] [letter-spacing:.9px] [text-transform:uppercase]"><span className="[width:5px] [height:5px] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Visi{vision ? "" : " · Contoh"}</span>
+                        <span className="mpk-poster-vision [color:#4b5a51] [font-size:12px] [line-height:1.65] [overflow-wrap:anywhere] max-[420px]:[font-size:11px]">{vision || candidate.program}</span>
+                      </span>
+                      <span className="candidate-profile-block [display:flex] [flex-direction:column] [gap:5px] [margin-top:7px] [padding:7px_0]">
+                        <span className="mpk-poster-copy-label [display:flex] [align-items:center] [gap:5px] [color:#a93646] [font-size:8px] [font-weight:800] [letter-spacing:.9px] [text-transform:uppercase]"><span className="[width:5px] [height:5px] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Misi{mission ? "" : " · Contoh"}</span>
+                        <span className="mpk-poster-missions [display:grid] [gap:6px] [&_>_span]:[position:relative] [&_>_span]:[padding-left:13px] [&_>_span]:[color:#4b5a51] [&_>_span]:[font-size:11px] [&_>_span]:[line-height:1.6] [&_>_span]:[overflow-wrap:anywhere] [&_>_span::before]:[position:absolute] [&_>_span::before]:[top:0] [&_>_span::before]:[left:0] [&_>_span::before]:[color:#bd3548] [&_>_span::before]:[content:'•'] max-[420px]:[&_>_span]:[font-size:10px]">
+                          {(mission
+                            ? mission.split(/\n+/).map((item) => item.trim()).filter(Boolean)
+                            : [candidate.motto]
+                          ).map((item) => <span key={item}>{item}</span>)}
+                        </span>
                       </span>
                     </span>
                     <span className={`mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px] ${isSelected ? "[border-color:#bd3548] [color:#fff] [background:#bd3548]" : ""}`}>
@@ -1180,17 +1158,19 @@ export default function Home() {
                         <span className="candidate-info [min-height:101px] [display:flex] [flex-direction:column] max-[420px]:[min-height:105px] [&_.candidate-name]:[margin-top:2px] max-[760px]:[min-height:0]">
                           <span className="candidate-role [color:#a17d80] [font-size:7px] [font-weight:700] [letter-spacing:.35px] [text-transform:uppercase]">Calon ketua</span>
                           <strong className="candidate-name [color:#30453b] [font:700_12px_'Manrope',_sans-serif] [letter-spacing:-.3px] max-[760px]:[font-size:10px] max-[420px]:[font-size:9px]">{candidate.name}</strong>
+                          <span className="[width:22px] [height:2px] [margin-top:4px] [border-radius:2px] [background:#eadcda]" aria-hidden="true" />
                           <span className="candidate-class [margin-top:3px] [color:#929a91] [font-size:8px]">{candidate.className}</span>
                           <span className="candidate-vice-divider [width:100%] [height:1px] [margin:6px_0] [background:#f0eeea]" />
                           <span className="candidate-role [color:#a17d80] [font-size:7px] [font-weight:700] [letter-spacing:.35px] [text-transform:uppercase]">Calon wakil ketua</span>
                           <strong className="candidate-vice-name [margin-top:2px] [color:#62484a] [font:700_10px_'Manrope',_sans-serif] [letter-spacing:-.2px]">{candidate.viceName}</strong>
-                          <span className="candidate-program [display:-webkit-box] [min-height:35px] [margin-top:10px] [overflow:hidden] [color:#78837a] [font-size:8px] [line-height:1.6] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [&_small]:[display:block] [&_small]:[margin-bottom:3px] [&_small]:[color:#a93646] [&_small]:[font-size:7px] [&_small]:[font-style:normal] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.5px] [&_small]:[text-transform:uppercase] max-[760px]:[font-size:7px] max-[420px]:[font-size:6px]">
-                            <small>Visi{candidate.vision ? "" : " · Contoh"}</small>
+                          <span className="[width:22px] [height:2px] [margin-top:4px] [border-radius:2px] [background:#eadcda]" aria-hidden="true" />
+                          <span className="candidate-program [display:-webkit-box] [min-height:42px] [margin-top:12px] [overflow:hidden] [color:#4b5a51] [font-size:9px] [line-height:1.6] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [&_small]:[display:block] [&_small]:[margin-bottom:4px] [&_small]:[color:#a93646] [&_small]:[font-size:8px] [&_small]:[font-style:normal] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.65px] [&_small]:[text-transform:uppercase] max-[760px]:[font-size:8px] max-[420px]:[font-size:7px]">
+                            <small><span className="[display:inline-block] [width:4px] [height:4px] [margin:0_4px_1px_0] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Visi{candidate.vision ? "" : " · Contoh"}</small>
                             {candidate.vision || candidate.program}
                           </span>
                         </span>
-                        <span className="candidate-motto [&_small]:[display:block] [&_small]:[margin-bottom:3px] [&_small]:[color:#a93646] [&_small]:[font-size:7px] [&_small]:[font-style:normal] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.5px] [&_small]:[text-transform:uppercase] [display:block] [min-height:38px] [margin-top:8px] [padding:7px_6px] [border-radius:4px] [color:#677b5a] [background:#f5f7ef] [font-size:7px] [font-style:normal] [line-height:1.5] [white-space:pre-line] max-[760px]:[font-size:6px]">
-                          <small>Misi{candidate.mission ? "" : " · Contoh"}</small>
+                        <span className="candidate-motto [&_small]:[display:block] [&_small]:[margin-bottom:4px] [&_small]:[color:#a93646] [&_small]:[font-size:8px] [&_small]:[font-style:normal] [&_small]:[font-weight:800] [&_small]:[letter-spacing:.65px] [&_small]:[text-transform:uppercase] [display:block] [min-height:42px] [margin-top:8px] [padding:7px_0] [color:#4b5a51] [font-size:9px] [font-style:normal] [line-height:1.6] [white-space:pre-line] max-[760px]:[font-size:8px] max-[420px]:[font-size:7px]">
+                          <small><span className="[display:inline-block] [width:4px] [height:4px] [margin:0_4px_1px_0] [border-radius:50%] [background:#e5bfc0]" aria-hidden="true" />Misi{candidate.mission ? "" : " · Contoh"}</small>
                           {candidate.mission || candidate.motto}
                         </span>
                         <span className={`select-indicator  [position:absolute] [right:9px] [bottom:9px] [width:16px] [height:16px] [border:1px_solid_#dfe5d6] [border-radius:50%] [display:grid] [place-items:center] [color:#fff] [background:#fff] [font-size:9px]${selectedCandidate === candidate.id ? "motion-safe:animate-check-pop" : ""}`}>{selectedCandidate === candidate.id ? "✓" : ""}</span>
