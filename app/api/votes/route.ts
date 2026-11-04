@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSessionVoter } from "@/lib/auth";
+import { getCandidateSelections } from "@/lib/candidates";
 import { getDatabase } from "@/lib/db";
 import { candidateIds, organizationIds, type OrganizationId } from "@/lib/election";
 
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
           chair: selections.find((row) => row.position === "chair")?.member_id ?? null,
           vice: selections.find((row) => row.position === "vice")?.member_id ?? null,
         },
+        candidateSelections: getCandidateSelections(voter.nis),
       });
     }
 
@@ -161,6 +163,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       votedOrganizations: rows.map((row) => row.organization_id),
+      candidateSelections: getCandidateSelections(voter.nis),
     });
   } catch (error) {
     if (transactionOpen) database.exec("ROLLBACK");

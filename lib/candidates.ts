@@ -108,3 +108,17 @@ export function getMpkSelections(nis: string) {
     vice: rows.find((row) => row.position === "vice")?.member_id ?? null,
   };
 }
+
+export function getCandidateSelections(
+  nis: string,
+): Partial<Record<"osis" | "ky", string>> {
+  const rows = getDatabase()
+    .prepare(
+      `SELECT organization_id, candidate_id
+       FROM voter_choices
+       WHERE nis = ? AND organization_id IN ('osis', 'ky')`,
+    )
+    .all(nis) as { organization_id: "osis" | "ky"; candidate_id: string }[];
+
+  return Object.fromEntries(rows.map((row) => [row.organization_id, row.candidate_id]));
+}

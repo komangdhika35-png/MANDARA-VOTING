@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminSession, createSession } from "@/lib/auth";
-import { getMpkSelections } from "@/lib/candidates";
+import { getCandidateSelections, getMpkSelections } from "@/lib/candidates";
 import { getDatabase } from "@/lib/db";
 import { organizationIds } from "@/lib/election";
 
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       voter: { name: voter.name },
       mpkSelections: getMpkSelections(voter.nis),
+      candidateSelections: getCandidateSelections(voter.nis),
       votedOrganizations: rows
         .map((row) => row.organization_id)
         .filter((id) => organizationIds.includes(id as (typeof organizationIds)[number])),

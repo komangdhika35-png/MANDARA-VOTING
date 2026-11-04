@@ -133,6 +133,7 @@ const organizations: {
 type VoteRecord = Partial<Record<OrganizationId, true>>;
 type MpkPosition = "chair" | "vice";
 type MpkSelections = Record<MpkPosition, string | null>;
+type CandidateSelections = Partial<Record<"osis" | "ky", string>>;
 
 const mpkPosterPrograms = [
   {
@@ -207,6 +208,7 @@ export default function Home() {
     chair: null,
     vice: null,
   });
+  const [candidateSelections, setCandidateSelections] = useState<CandidateSelections>({});
   const [electionCandidates, setElectionCandidates] = useState<ElectionCandidates | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState("");
   const [selectedMpkPosition, setSelectedMpkPosition] = useState<MpkPosition>("chair");
@@ -249,6 +251,7 @@ export default function Home() {
           voter?: { name: string };
           votedOrganizations?: OrganizationId[];
           mpkSelections?: MpkSelections;
+          candidateSelections?: CandidateSelections;
           error?: string;
         };
         if (!response.ok) throw new Error(data.error ?? "Gagal memuat sesi pemilih.");
@@ -258,6 +261,7 @@ export default function Home() {
         setVoter(data.voter?.name ?? "");
         setVotes(toVoteRecord(data.votedOrganizations ?? []));
         setMpkSelections(data.mpkSelections ?? { chair: null, vice: null });
+        setCandidateSelections(data.candidateSelections ?? {});
       } catch (error) {
         if (active) {
           console.error("Gagal memuat sesi pemilih:", error);
@@ -371,6 +375,7 @@ export default function Home() {
         voter?: { name: string };
         votedOrganizations?: OrganizationId[];
         mpkSelections?: MpkSelections;
+        candidateSelections?: CandidateSelections;
         error?: string;
       };
       if (!response.ok) throw new Error(data.error ?? "Login tidak berhasil.");
@@ -379,6 +384,7 @@ export default function Home() {
       setVoter(data.voter?.name ?? "");
       setVotes(toVoteRecord(data.votedOrganizations ?? []));
       setMpkSelections(data.mpkSelections ?? { chair: null, vice: null });
+      setCandidateSelections(data.candidateSelections ?? {});
       setActiveOrganization("mpk");
       setSelectedMpkPosition("chair");
       setSelectedCandidate("");
@@ -406,6 +412,7 @@ export default function Home() {
     setRole(null);
     setVotes({});
     setMpkSelections({ chair: null, vice: null });
+    setCandidateSelections({});
     setActiveOrganization("mpk");
     setSelectedMpkPosition("chair");
     setSelectedCandidate("");
@@ -431,12 +438,14 @@ export default function Home() {
       const data = (await response.json()) as {
         votedOrganizations?: OrganizationId[];
         mpkSelections?: MpkSelections;
+        candidateSelections?: CandidateSelections;
         error?: string;
       };
       if (!response.ok) throw new Error(data.error ?? "Suara belum dapat disimpan.");
 
       setVotes(toVoteRecord(data.votedOrganizations ?? []));
       setMpkSelections(data.mpkSelections ?? { chair: null, vice: null });
+      setCandidateSelections(data.candidateSelections ?? {});
       setSelectedCandidate("");
       setShowConfirmation(false);
     } catch (error) {
@@ -487,6 +496,18 @@ export default function Home() {
     (activeOrganization === "osis" || activeOrganization === "ky") &&
     !votes[activeOrganization];
   const pairPosterCandidates = currentOrganization.candidates.slice(0, 2);
+  const selectedMpkChair = electionCandidates?.mpkMembers.chair.find(
+    (candidate) => candidate.id === mpkSelections.chair,
+  );
+  const selectedMpkVice = electionCandidates?.mpkMembers.vice.find(
+    (candidate) => candidate.id === mpkSelections.vice,
+  );
+  const selectedPairCandidate =
+    activeOrganization === "osis" || activeOrganization === "ky"
+      ? electionCandidates?.organizations[activeOrganization].find(
+          (candidate) => candidate.id === candidateSelections[activeOrganization],
+        )
+      : undefined;
 
   if (!ready) return <main className="min-h-screen bg-paper" aria-label="Memuat aplikasi" />;
 
@@ -731,7 +752,9 @@ export default function Home() {
                         ).map((item) => <span key={item}>{item}</span>)}
                       </span>
                     </span>
-                    <span className="mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px]">{isSelected ? "✓ Dipilih" : candidate ? "Pilih calon" : "Belum tersedia"}</span>
+                    <span className={`mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px] ${isSelected ? "[border-color:#bd3548] [color:#fff] [background:#bd3548]" : ""}`}>
+                      {isSelected ? "✓ Dipilih" : candidate ? "Pilih calon" : "Belum tersedia"}
+                    </span>
                   </button>
                 );
               })}
@@ -747,19 +770,15 @@ export default function Home() {
               </span>
               <span className="mpk-completion-eyebrow [color:#a93646] [font-size:9px] [font-weight:800] [letter-spacing:1.8px]">PEMILIHAN {currentOrganization.name} SELESAI</span>
               <h1 id="election-completion-title">Suara {currentOrganization.name} sudah tercatat</h1>
-              <p>
-                {activeOrganization === "mpk"
-                  ? "Pilihan calon ketua dan wakil MPK berhasil disimpan. Terima kasih sudah menggunakan hak pilihmu."
-                  : `Pilihan pasangan calon ${currentOrganization.name} berhasil disimpan. Terima kasih sudah menggunakan hak pilihmu.`}
-              </p>
+              <p>Terima kasih atas partisipasinya! Anda telah memilih:</p>
               <div className="mpk-completion-choices [display:flex] [flex-wrap:wrap] [justify-content:center] [gap:10px] [margin-top:25px] [&_span]:[display:inline-flex] [&_span]:[align-items:center] [&_span]:[gap:7px] [&_span]:[min-height:35px] [&_span]:[padding:0_13px] [&_span]:[border:1px_solid_#f1dfdf] [&_span]:[border-radius:20px] [&_span]:[color:#86585e] [&_span]:[background:rgba(255,255,255,.85)] [&_span]:[font-size:9px] [&_span]:[font-weight:700] [&_i]:[display:grid] [&_i]:[width:17px] [&_i]:[height:17px] [&_i]:[place-items:center] [&_i]:[border-radius:50%] [&_i]:[color:#fff] [&_i]:[background:#c83d50] [&_i]:[font-size:10px] [&_i]:[font-style:normal]" aria-label={`Pilihan ${currentOrganization.name} sudah tercatat`}>
                 {activeOrganization === "mpk" ? (
                   <>
-                    <span className="motion-safe:animate-content-in" style={{ animationDelay: "220ms" }}><i aria-hidden="true">✓</i> Calon ketua MPK</span>
-                    <span className="motion-safe:animate-content-in" style={{ animationDelay: "300ms" }}><i aria-hidden="true">✓</i> Calon wakil MPK</span>
+                    <span className="motion-safe:animate-content-in" style={{ animationDelay: "220ms" }}><i aria-hidden="true">✓</i> Ketua MPK: {selectedMpkChair?.name ?? "Calon MPK"}</span>
+                    <span className="motion-safe:animate-content-in" style={{ animationDelay: "300ms" }}><i aria-hidden="true">✓</i> Wakil MPK: {selectedMpkVice?.name ?? "Calon MPK"}</span>
                   </>
                 ) : (
-                  <span className="motion-safe:animate-content-in" style={{ animationDelay: "220ms" }}><i aria-hidden="true">✓</i> Pasangan calon {currentOrganization.name}</span>
+                  <span className="motion-safe:animate-content-in" style={{ animationDelay: "220ms" }}><i aria-hidden="true">✓</i> {selectedPairCandidate ? `Paslon ${selectedPairCandidate.number}: ${selectedPairCandidate.name} & ${selectedPairCandidate.viceName}` : `Paslon ${currentOrganization.name}`}</span>
                 )}
               </div>
               {appError && <p className="form-error app-error [margin:-7px_0_10px] [color:#b6473d] [font-size:10px] [width:fit-content] [margin:14px_0_0] [padding:9px_12px] [border:1px_solid_#f0d7d9] [border-radius:6px] [background:#fff7f7]" role="alert">{appError}</p>}
@@ -816,7 +835,7 @@ export default function Home() {
                       <span className="pair-poster-plus [color:#bd3548] [font:700_14px_'Manrope',_sans-serif]" aria-hidden="true">&amp;</span>
                       <span><small>CALON WAKIL</small><strong>{candidate.viceName}</strong></span>
                     </span>
-                    <span className="pair-poster-profile [display:flex] [flex-direction:column] [padding:0_18px] [&_.mpk-poster-vision]:[min-height:36px] [&_.mpk-poster-vision]:[font-size:9px] [&_.mpk-poster-missions_>_span]:[font-size:8px] max-[760px]:[padding:0_12px]">
+                    <span className="pair-poster-profile [display:flex] [flex-direction:column] [padding:0_18px] [&_.mpk-poster-vision]:[min-height:36px] [&_.mpk-poster-vision]:[font-size:10px] [&_.mpk-poster-missions_>_span]:[font-size:9px] max-[420px]:[&_.mpk-poster-vision]:[font-size:9px] max-[420px]:[&_.mpk-poster-missions_>_span]:[font-size:8px] max-[760px]:[padding:0_12px]">
                       <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Visi{vision ? "" : " · Contoh"}</span>
                       <span className="mpk-poster-vision [margin-top:4px] [color:#657269] [font-size:8px] [line-height:1.5] max-[420px]:[font-size:7px]">{vision || candidate.program}</span>
                       <span className="mpk-poster-copy-label [margin-top:9px] [color:#a93646] [font-size:7px] [font-weight:800] [letter-spacing:.65px] [text-transform:uppercase]">Misi{mission ? "" : " · Contoh"}</span>
@@ -827,7 +846,9 @@ export default function Home() {
                         ).map((item) => <span key={item}>{item}</span>)}
                       </span>
                     </span>
-                    <span className="mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px]">{isSelected ? "✓ Dipilih" : "Pilih paslon"}</span>
+                    <span className={`mpk-poster-select [display:block] [margin:11px_10px_10px] [padding:8px_5px] [border:1px_solid_#eee6e3] [border-radius:6px] [color:#738076] [font-size:8px] [font-weight:700] [text-align:center] max-[420px]:[margin-right:7px] max-[420px]:[margin-left:7px] ${isSelected ? "[border-color:#bd3548] [color:#fff] [background:#bd3548]" : ""}`}>
+                      {isSelected ? "✓ Dipilih" : "Pilih paslon"}
+                    </span>
                   </button>
                 );
               })}
