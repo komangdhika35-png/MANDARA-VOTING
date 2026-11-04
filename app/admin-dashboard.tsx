@@ -250,7 +250,9 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
       if (!response.ok) throw new Error(data.error ?? "Suara belum dapat direset.");
 
       setResetMessage(
-        `Suara ${resetTarget.name} untuk ${resetTarget.organizationName} sudah direset. Siswa perlu masuk kembali untuk memilih ulang.`,
+        resetTarget.organizationId === "all"
+          ? `Semua pilihan ${resetTarget.name} sudah direset. Siswa dapat masuk kembali dan memilih ulang dari awal.`
+          : `Suara ${resetTarget.name} untuk ${resetTarget.organizationName} sudah direset. Siswa perlu masuk kembali untuk memilih ulang.`,
       );
       setResetTarget(null);
       await loadResults();
@@ -805,20 +807,36 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
                             <small>NIS: {voter.nis}</small>
                             <span>{voter.candidateName}</span>
                           </span>
-                          <button
-                            className="reset-vote-button [flex:0_0_auto] [padding:5px_8px] [border:1px_solid_#f0d7d9] [border-radius:5px] [color:#ae3443] [background:#fff7f7] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[border-color:#dfabb0] [&:hover]:[background:#ffeff0] [&:disabled]:[opacity:.6] [&:disabled]:[cursor:wait]"
-                            onClick={() => {
-                              setResetError("");
-                              setResetTarget({
-                                ...voter,
-                                organizationId: organization.id,
-                                organizationName: organization.name,
-                              });
-                            }}
-                            aria-label={`Reset suara ${voter.name} untuk ${organization.name}`}
-                          >
-                            Reset
-                          </button>
+                          <span className="[display:flex] [flex:0_0_auto] [flex-direction:column] [align-items:stretch] [gap:4px]">
+                            <button
+                              className="reset-vote-button [padding:5px_8px] [border:1px_solid_#f0d7d9] [border-radius:5px] [color:#ae3443] [background:#fff7f7] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[border-color:#dfabb0] [&:hover]:[background:#ffeff0] [&:disabled]:[opacity:.6] [&:disabled]:[cursor:wait]"
+                              onClick={() => {
+                                setResetError("");
+                                setResetTarget({
+                                  ...voter,
+                                  organizationId: organization.id,
+                                  organizationName: organization.name,
+                                });
+                              }}
+                              aria-label={`Reset suara ${voter.name} untuk ${organization.name}`}
+                            >
+                              Reset
+                            </button>
+                            <button
+                              className="reset-vote-button [padding:5px_8px] [border:1px_solid_#eadfd0] [border-radius:5px] [color:#7b5d32] [background:#fffaf1] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[border-color:#d7c098] [&:hover]:[background:#fff3dd]"
+                              onClick={() => {
+                                setResetError("");
+                                setResetTarget({
+                                  ...voter,
+                                  organizationId: "all",
+                                  organizationName: "semua organisasi",
+                                });
+                              }}
+                              aria-label={`Reset semua pilihan ${voter.name}`}
+                            >
+                              Reset semua
+                            </button>
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -874,8 +892,11 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => Promise<v
             <span className="eyebrow dark-eyebrow [font-size:9px] [font-weight:700] [letter-spacing:1.15px] [color:#849177]">KONFIRMASI RESET SUARA</span>
             <h2 id="reset-vote-title">Reset pilihan siswa?</h2>
             <p>
-              Suara <strong>{resetTarget.name}</strong> untuk {resetTarget.organizationName} akan
-              dihapus dari rekap. Siswa dapat masuk kembali dan memilih ulang. NIS: {resetTarget.nis}.
+              {resetTarget.organizationId === "all" ? (
+                <>Semua suara <strong>{resetTarget.name}</strong> untuk MPK, OSIS, dan KY akan dihapus dari rekap. Siswa dapat masuk kembali dan memilih ulang dari awal. NIS: {resetTarget.nis}.</>
+              ) : (
+                <>Suara <strong>{resetTarget.name}</strong> untuk {resetTarget.organizationName} akan dihapus dari rekap. Siswa dapat masuk kembali dan memilih ulang. NIS: {resetTarget.nis}.</>
+              )}
             </p>
             {resetError && <p className="form-error reset-dialog-error [margin:-7px_0_10px] [color:#b6473d] [font-size:10px] [margin:12px_0_0]" role="alert">{resetError}</p>}
             <div className="modal-actions [display:grid] [grid-template-columns:1fr_1fr] [gap:9px] [margin-top:22px] [&_button:disabled]:[opacity:.65] [&_button:disabled]:[cursor:wait]">

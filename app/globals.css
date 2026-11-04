@@ -9,6 +9,8 @@
   --animate-rise-in: rise-in 650ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
   --animate-fade-in: fade-in 500ms ease-out both;
   --animate-content-in: content-in 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  --animate-login-slide-left: login-slide-left 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  --animate-login-slide-right: login-slide-right 360ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
   --animate-modal-in: modal-in 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
   --animate-backdrop-in: backdrop-in 180ms ease-out both;
   --animate-check-pop: check-pop 360ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
@@ -22,6 +24,30 @@
     from {
       opacity: 0;
       transform: translateY(10px);
+    }
+
+    @keyframes login-slide-left {
+      from {
+        opacity: 0;
+        transform: translateX(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes login-slide-right {
+      from {
+        opacity: 0;
+        transform: translateX(-24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     to {

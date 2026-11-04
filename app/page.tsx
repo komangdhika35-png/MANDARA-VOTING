@@ -194,14 +194,34 @@ function toVoteRecord(organizationIds: OrganizationId[]): VoteRecord {
   return record;
 }
 
+function playCompletionSound(audioContext: AudioContext) {
+  const startTime = audioContext.currentTime;
+  for (const [index, frequency] of [880, 1174.66].entries()) {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const noteStart = startTime + index * 0.19;
+    oscillator.type = "sine";
+    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.0001, noteStart);
+    gain.gain.exponentialRampToValueAtTime(0.8, noteStart + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.17);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(noteStart);
+    oscillator.stop(noteStart + 0.18);
+  }
+}
+
 export default function Home() {
   const [nis, setNis] = useState("");
   const [password, setPassword] = useState("");
   const [adminPasswordStep, setAdminPasswordStep] = useState(false);
   const [studentPasswordStep, setStudentPasswordStep] = useState(false);
   const [studentName, setStudentName] = useState("");
+  const [loginTransition, setLoginTransition] = useState<"forward" | "backward" | "">("");
   const adminPasswordRef = useRef<HTMLInputElement>(null);
   const studentPasswordRef = useRef<HTMLInputElement>(null);
+  const completionAudioContextRef = useRef<AudioContext | null>(null);
   const [voter, setVoter] = useState("");
   const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [activeOrganization, setActiveOrganization] =
@@ -353,6 +373,7 @@ export default function Home() {
       return;
     }
     if (adminLogin && !adminPasswordStep) {
+      setLoginTransition("forward");
       setAdminPasswordStep(true);
       setPassword("");
       setLoginError("");
@@ -377,6 +398,7 @@ export default function Home() {
         };
         if (!response.ok) throw new Error(data.error ?? "NIS tidak terdaftar.");
         setStudentName(data.voter?.name ?? "");
+        setLoginTransition("forward");
         setStudentPasswordStep(true);
         setPassword("");
       } catch (error) {
@@ -431,6 +453,7 @@ export default function Home() {
       setAdminPasswordStep(false);
       setStudentPasswordStep(false);
       setStudentName("");
+      setLoginTransition("");
     } catch (error) {
       setLoginError(
         error instanceof Error
@@ -464,6 +487,19 @@ export default function Home() {
     if (!selectedCandidate || votes[activeOrganization]) return;
     setIsSubmitting(true);
     setAppError("");
+    let audioContext: AudioContext | null = null;
+    try {
+      const AudioContextConstructor = window.AudioContext;
+      if (AudioContextConstructor) {
+        audioContext =
+          completionAudioContextRef.current ??
+          new AudioContextConstructor();
+        completionAudioContextRef.current = audioContext;
+        if (audioContext.state === "suspended") await audioContext.resume();
+      }
+    } catch (error) {
+      console.warn("Audio konfirmasi pemilihan tidak tersedia:", error);
+    }
     try {
       const response = await fetch("/api/votes", {
         method: "POST",
@@ -482,6 +518,16 @@ export default function Home() {
         error?: string;
       };
       if (!response.ok) throw new Error(data.error ?? "Suara belum dapat disimpan.");
+
+      const completedOrganizations = new Set(data.votedOrganizations ?? []);
+      if (
+        audioContext?.state === "running" &&
+        electionOrganizations.every((organization) =>
+          completedOrganizations.has(organization.id),
+        )
+      ) {
+        playCompletionSound(audioContext);
+      }
 
       setVotes(toVoteRecord(data.votedOrganizations ?? []));
       setMpkSelections(data.mpkSelections ?? { chair: null, vice: null });
@@ -598,7 +644,7 @@ export default function Home() {
                 <span>{showAdminPasswordStep ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
                 <span className="secure-label [color:#97565f] [&_span]:[color:#cb5260]"><span>✦</span> SUARA MANDARA</span>
               </div>
-              <div key={showPasswordStep ? (showAdminPasswordStep ? "admin" : "student-password") : "student"} className="form-heading motion-safe:animate-content-in [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]">
+              <div key={showPasswordStep ? (showAdminPasswordStep ? "admin" : "student-password") : "student"} className={`form-heading ${loginTransition === "forward" ? "motion-safe:animate-login-slide-left" : loginTransition === "backward" ? "motion-safe:animate-login-slide-right" : "motion-safe:animate-content-in"} [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]`}>
                 <span className="form-icon [width:25px] [height:25px] [border-radius:8px] [display:grid] [place-items:center] [color:#b63d4d] [background:#fff0f1] [font-size:16px]">{showPasswordStep ? "▣" : "↗"}</span>
                 <p>{showAdminPasswordStep ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
                 <h2>
@@ -612,7 +658,7 @@ export default function Home() {
                     : "Masukkan NIS untuk melanjutkan pemilihan."}
                 </span>
               </div>
-              <form className="login-form [display:flex] [flex-direction:column] [margin-top:24px] [&_label]:[margin:0_0_8px] [&_label]:[color:#5a4548] [&_label]:[font-size:10px] [&_label]:[font-weight:700]" onSubmit={handleLogin}>
+              <form key={showPasswordStep ? (showAdminPasswordStep ? "admin-password" : "student-password") : "nis"} className={`login-form ${loginTransition === "forward" ? "motion-safe:animate-login-slide-left" : loginTransition === "backward" ? "motion-safe:animate-login-slide-right" : ""} [display:flex] [flex-direction:column] [margin-top:24px] [&_label]:[margin:0_0_8px] [&_label]:[color:#5a4548] [&_label]:[font-size:10px] [&_label]:[font-weight:700]`} onSubmit={handleLogin}>
                 {showPasswordStep ? (
                   <>
                     {showAdminPasswordStep ? (
@@ -623,6 +669,7 @@ export default function Home() {
                           type="button"
                           className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
                           onClick={() => {
+                            setLoginTransition("backward");
                             setAdminPasswordStep(false);
                             setPassword("");
                             setLoginError("");
@@ -639,6 +686,7 @@ export default function Home() {
                           type="button"
                           className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
                           onClick={() => {
+                            setLoginTransition("backward");
                             setStudentPasswordStep(false);
                             setPassword("");
                             setLoginError("");
@@ -685,6 +733,7 @@ export default function Home() {
                         maxLength={5}
                         onChange={(event) => {
                           setNis(event.target.value);
+                          if (studentPasswordStep || adminPasswordStep) setLoginTransition("backward");
                           setAdminPasswordStep(false);
                           setStudentPasswordStep(false);
                           setStudentName("");
@@ -1186,7 +1235,7 @@ export default function Home() {
 
       {isElectionCompletedScreen && (
         <div className="mpk-poster-action-bar completion-action-bar [position:fixed] [z-index:8] [right:0] [bottom:0] [left:0] [display:flex] [align-items:center] [justify-content:space-between] [gap:20px] [min-height:83px] [padding:13px_max(calc((100vw_-_1060px)_/_2),_32px)] [border-top:1px_solid_#eee4e3] [background:rgba(255,255,255,.97)] [box-shadow:0_-7px_25px_rgba(36,_45,_37,_.07)] [backdrop-filter:blur(12px)] max-[760px]:[min-height:76px] max-[760px]:[gap:10px] max-[760px]:[padding:10px_18px] max-[420px]:[align-items:stretch] max-[420px]:[flex-direction:column] max-[420px]:[gap:7px] max-[420px]:[padding:9px_13px] [&_.mpk-poster-action-button]:[background:#c93246] [&_.mpk-poster-action-button:hover:not(:disabled)]:[background:#ad293b]">
-          <div className="mpk-poster-action-copy [display:flex] [min-width:0] [flex-direction:column] [gap:4px] [&_strong]:[overflow:hidden] [&_strong]:[color:#35473d] [&_strong]:[font:800_12px_'Manrope',_sans-serif] [&_strong]:[text-overflow:ellipsis] [&_strong]:[white-space:nowrap] [&_span]:[color:#8b948b] [&_span]:[font-size:8px] max-[420px]:[display:none]">
+          <div className="mpk-poster-action-copy [display:flex] [min-width:0] [flex-direction:column] [gap:4px] [&_strong]:[overflow:hidden] [&_strong]:[color:#35473d] [&_strong]:[font:800_12px_'Manrope',_sans-serif] [&_strong]:[text-overflow:ellipsis] [&_strong]:[white-space:nowrap] [&_span]:[color:#8b948b] [&_span]:[font-size:8px]">
             <strong>{nextUnvotedOrganization ? `Lanjut memilih ${nextUnvotedOrganization.name}` : "Semua pilihan sudah tercatat"}</strong>
             <span>{nextUnvotedOrganization ? "Pilih pasangan calon organisasi berikutnya." : "Terima kasih telah menggunakan hak pilihmu."}</span>
           </div>

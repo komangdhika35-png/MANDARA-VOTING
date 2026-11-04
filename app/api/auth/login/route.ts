@@ -91,18 +91,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "NIS atau password pemilih salah." }, { status: 401 });
     }
 
-    await createSession(voter.nis);
-    const rows = getDatabase()
+    const database = getDatabase();
+    const participationRows = database
       .prepare("SELECT organization_id FROM participation WHERE nis = ?")
       .all(voter.nis) as { organization_id: string }[];
+    const votedOrganizations = participationRows
+      .map((row) => row.organization_id)
+      .filter((id) => organizationIds.includes(id as (typeof organizationIds)[number]));
+    if (new Set(votedOrganizations).size === organizationIds.length) {
+      return NextResponse.json(
+        { error: "Kamu sudah menyelesaikan seluruh pilihan. NIS ini tidak dapat digunakan untuk login kembali." },
+        { status: 403 },
+      );
+    }
+
+    await createSession(voter.nis);
 
     return NextResponse.json({
       voter: { name: voter.name },
       mpkSelections: getMpkSelections(voter.nis),
       candidateSelections: getCandidateSelections(voter.nis),
-      votedOrganizations: rows
-        .map((row) => row.organization_id)
-        .filter((id) => organizationIds.includes(id as (typeof organizationIds)[number])),
+      votedOrganizations,
     });
   } catch (error) {
     console.error("Gagal memproses login pemilih:", error);

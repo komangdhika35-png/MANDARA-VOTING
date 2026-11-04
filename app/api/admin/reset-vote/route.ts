@@ -27,12 +27,84 @@ export async function POST(request: Request) {
       typeof body.organizationId !== "string" ||
       !body.nis.trim() ||
       body.nis.trim().length > 32 ||
-      !organizationIds.includes(body.organizationId as OrganizationId)
+      (body.organizationId !== "all" &&
+        !organizationIds.includes(body.organizationId as OrganizationId))
     ) {
       return NextResponse.json({ error: "NIS atau organisasi tidak valid." }, { status: 400 });
     }
 
     const nis = body.nis.trim();
+    if (body.organizationId === "all") {
+      const database = getDatabase();
+      let transactionOpen = false;
+      try {
+        database.exec("BEGIN IMMEDIATE");
+        transactionOpen = true;
+
+        const mpkChoices = database
+          .prepare("SELECT position, member_id FROM mpk_choices WHERE nis = ?")
+          .all(nis) as { position: string; member_id: string }[];
+        const voterChoices = database
+          .prepare(
+            `SELECT voter_choices.organization_id, voter_choices.candidate_id
+             FROM voter_choices
+             JOIN participation
+               ON participation.nis = voter_choices.nis
+               AND participation.organization_id = voter_choices.organization_id
+             WHERE voter_choices.nis = ?`,
+          )
+          .all(nis) as { organization_id: string; candidate_id: string }[];
+
+        if (mpkChoices.length === 0 && voterChoices.length === 0) {
+          database.exec("ROLLBACK");
+          transactionOpen = false;
+          return NextResponse.json(
+            { error: "Pilihan siswa tidak ditemukan atau sudah direset." },
+            { status: 404 },
+          );
+        }
+
+        const deleteMpkBallot = database.prepare(
+          `DELETE FROM mpk_ballots
+           WHERE ballot_id = (
+             SELECT ballot_id FROM mpk_ballots
+             WHERE position = ? AND member_id = ?
+             LIMIT 1
+           )`,
+        );
+        for (const choice of mpkChoices) {
+          if (deleteMpkBallot.run(choice.position, choice.member_id).changes !== 1) {
+            throw new Error(`Surat suara MPK untuk jabatan ${choice.position} tidak ditemukan.`);
+          }
+        }
+
+        const deleteBallot = database.prepare(
+          `DELETE FROM ballots
+           WHERE ballot_id = (
+             SELECT ballot_id FROM ballots
+             WHERE organization_id = ? AND candidate_id = ?
+             LIMIT 1
+           )`,
+        );
+        for (const choice of voterChoices) {
+          if (deleteBallot.run(choice.organization_id, choice.candidate_id).changes !== 1) {
+            throw new Error(`Surat suara untuk organisasi ${choice.organization_id} tidak ditemukan.`);
+          }
+        }
+
+        database.prepare("DELETE FROM mpk_choices WHERE nis = ?").run(nis);
+        database.prepare("DELETE FROM voter_choices WHERE nis = ?").run(nis);
+        database.prepare("DELETE FROM participation WHERE nis = ?").run(nis);
+        database.prepare("DELETE FROM sessions WHERE nis = ?").run(nis);
+        database.exec("COMMIT");
+        transactionOpen = false;
+        return NextResponse.json({ success: true });
+      } catch (error) {
+        if (transactionOpen) database.exec("ROLLBACK");
+        throw error;
+      }
+    }
+
     const organizationId = body.organizationId as OrganizationId;
     const database = getDatabase();
     let transactionOpen = false;
