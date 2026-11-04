@@ -19,7 +19,7 @@ Buka `http://localhost:3000`. Untuk menjalankan versi produksi, gunakan `npm run
 
 ## Memasukkan data siswa
 
-Siswa masuk hanya dengan NIS yang terdaftar di database. Ketik username `admin` pada halaman login untuk menampilkan kolom password dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Halaman admin menampilkan rekap jumlah suara, nama siswa beserta pilihannya, dan daftar siswa yang belum memilih untuk setiap organisasi.
+Siswa masuk dengan mengisi NIS 4 digit terlebih dahulu, lalu memasukkan password berupa NIS + 1 (contoh: NIS `1343`, password `1344`). Ketik username `admin` pada halaman login untuk menampilkan kolom password admin dan membuka halaman rekap suara. Password admin pada instalasi ini disimpan di file lokal `.env.local` (tidak diunggah ke Git). Halaman admin menampilkan rekap jumlah suara, nama siswa beserta pilihannya, dan daftar siswa yang belum memilih untuk setiap organisasi.
 
 Admin dapat memilih **Reset** di samping pemilih untuk menghapus suara siswa pada organisasi tersebut. Untuk MPK, reset menghapus pilihan ketua dan/atau wakil yang sudah tercatat. Tindakan ini harus dikonfirmasi, memperbarui rekap suara, dan mengakhiri sesi login siswa tersebut. Siswa perlu masuk kembali untuk memilih ulang. Reset dilakukan satu organisasi sekaligus.
 
@@ -53,4 +53,4 @@ SQLite menyimpan data siswa, sesi login, partisipasi pemilih, dan surat suara se
 
 SQLite sesuai untuk aplikasi yang dijalankan pada satu komputer/server dengan penyimpanan disk persisten. Jangan menjalankan beberapa salinan aplikasi dengan file database lokal terpisah, dan jangan mengandalkan filesystem sementara pada layanan hosting. Untuk pemilihan resmi atau aplikasi yang perlu diakses luas, sekolah perlu menyiapkan server persisten, backup, pengamanan data, dan prosedur audit terlebih dahulu. Nama kandidat dalam aplikasi masih berupa data contoh.
 
-Login siswa hanya menggunakan NIS, sehingga siapa pun yang mengetahui NIS pemilih dapat masuk. Ganti password admin sebelum penggunaan, dan jangan membuka aplikasi ke internet atau menggunakannya sebagai pemilihan resmi tanpa pengamanan tambahan serta persetujuan sekolah.
+Password siswa diturunkan langsung dari NIS sehingga mudah ditebak oleh siapa pun yang mengetahui NIS; ini bukan mekanisme autentikasi yang kuat. Ganti password admin sebelum penggunaan, dan jangan membuka aplikasi ke internet atau menggunakannya sebagai pemilihan resmi tanpa pengamanan tambahan serta persetujuan sekolah.

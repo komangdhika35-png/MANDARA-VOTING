@@ -198,7 +198,10 @@ export default function Home() {
   const [nis, setNis] = useState("");
   const [password, setPassword] = useState("");
   const [adminPasswordStep, setAdminPasswordStep] = useState(false);
+  const [studentPasswordStep, setStudentPasswordStep] = useState(false);
+  const [studentName, setStudentName] = useState("");
   const adminPasswordRef = useRef<HTMLInputElement>(null);
+  const studentPasswordRef = useRef<HTMLInputElement>(null);
   const [voter, setVoter] = useState("");
   const [role, setRole] = useState<"student" | "admin" | null>(null);
   const [activeOrganization, setActiveOrganization] =
@@ -220,7 +223,8 @@ export default function Home() {
 
   useEffect(() => {
     if (adminPasswordStep) adminPasswordRef.current?.focus();
-  }, [adminPasswordStep]);
+    if (studentPasswordStep) studentPasswordRef.current?.focus();
+  }, [adminPasswordStep, studentPasswordStep]);
 
   useEffect(() => {
     let active = true;
@@ -354,8 +358,42 @@ export default function Home() {
       setLoginError("");
       return;
     }
+    if (!adminLogin && !studentPasswordStep) {
+      if (!/^\d{4}$/.test(cleanNis)) {
+        setLoginError("NIS tidak valid.");
+        return;
+      }
+      setLoginError("");
+      setIsSubmitting(true);
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nis: cleanNis, step: "identify" }),
+        });
+        const data = (await response.json()) as {
+          voter?: { name: string };
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error ?? "NIS tidak terdaftar.");
+        setStudentName(data.voter?.name ?? "");
+        setStudentPasswordStep(true);
+        setPassword("");
+      } catch (error) {
+        setLoginError(
+          error instanceof Error ? error.message : "Tidak dapat memeriksa NIS. Silakan coba lagi.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
     if (adminLogin && !password) {
       setLoginError("Password admin wajib diisi.");
+      return;
+    }
+    if (!adminLogin && !password) {
+      setLoginError("Password pemilih wajib diisi.");
       return;
     }
     setLoginError("");
@@ -367,7 +405,7 @@ export default function Home() {
         body: JSON.stringify(
           adminLogin
             ? { username: "admin", password }
-            : { nis: cleanNis },
+            : { nis: cleanNis, password },
         ),
       });
       const data = (await response.json()) as {
@@ -391,6 +429,8 @@ export default function Home() {
       setNis("");
       setPassword("");
       setAdminPasswordStep(false);
+      setStudentPasswordStep(false);
+      setStudentName("");
     } catch (error) {
       setLoginError(
         error instanceof Error
@@ -514,6 +554,9 @@ export default function Home() {
   if (!role) {
     const showAdminPasswordStep =
       nis.trim().toLocaleLowerCase("en-US") === "admin" && adminPasswordStep;
+    const showStudentPasswordStep =
+      nis.trim().toLocaleLowerCase("en-US") !== "admin" && studentPasswordStep;
+    const showPasswordStep = showAdminPasswordStep || showStudentPasswordStep;
     return (
       <main className="grid min-h-screen place-items-center bg-[radial-gradient(ellipse_at_5%_90%,rgba(226,58,76,.09),transparent_34%),radial-gradient(ellipse_at_96%_8%,rgba(245,196,199,.35),transparent_31%),linear-gradient(135deg,#fff_15%,#fffafa_65%,#fff4f5)] px-6 pt-[38px] pb-[26px] motion-safe:animate-rise-in max-[760px]:px-[18px] max-[760px]:py-6 max-[420px]:px-3">
         <div className="w-[min(1054px,100%)]">
@@ -555,48 +598,72 @@ export default function Home() {
                 <span>{showAdminPasswordStep ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
                 <span className="secure-label [color:#97565f] [&_span]:[color:#cb5260]"><span>✦</span> SUARA MANDARA</span>
               </div>
-              <div key={showAdminPasswordStep ? "admin" : "student"} className="form-heading motion-safe:animate-content-in [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]">
-                <span className="form-icon [width:25px] [height:25px] [border-radius:8px] [display:grid] [place-items:center] [color:#b63d4d] [background:#fff0f1] [font-size:16px]">{showAdminPasswordStep ? "▣" : "↗"}</span>
+              <div key={showPasswordStep ? (showAdminPasswordStep ? "admin" : "student-password") : "student"} className="form-heading motion-safe:animate-content-in [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]">
+                <span className="form-icon [width:25px] [height:25px] [border-radius:8px] [display:grid] [place-items:center] [color:#b63d4d] [background:#fff0f1] [font-size:16px]">{showPasswordStep ? "▣" : "↗"}</span>
                 <p>{showAdminPasswordStep ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
                 <h2>
-                  {showAdminPasswordStep ? <>Masukkan password<br />admin.</> : <>Mulai dari<br />suaramu.</>}
+                  {showAdminPasswordStep ? <>Masukkan password<br />admin.</> : showStudentPasswordStep ? <>Masukkan password<br />pemilih.</> : <>Mulai dari<br />suaramu.</>}
                 </h2>
                 <span className="form-subtitle [display:block] [margin-top:10px] [color:#897a7b] [font-size:11px] [line-height:1.6]">
                   {showAdminPasswordStep
                     ? "Masukkan password untuk membuka rekap suara."
+                    : showStudentPasswordStep
+                      ? "Masukkan password untuk melanjutkan pemilihan."
                     : "Masukkan NIS untuk melanjutkan pemilihan."}
                 </span>
               </div>
               <form className="login-form [display:flex] [flex-direction:column] [margin-top:24px] [&_label]:[margin:0_0_8px] [&_label]:[color:#5a4548] [&_label]:[font-size:10px] [&_label]:[font-weight:700]" onSubmit={handleLogin}>
-                {showAdminPasswordStep ? (
+                {showPasswordStep ? (
                   <>
-                    <div className="admin-account motion-safe:animate-content-in [display:flex] [align-items:center] [gap:10px] [margin:0_0_18px] [padding:10px] [border:1px_solid_#f0e2e0] [border-radius:8px] [background:#fffafa] [&_>_span:nth-child(2)]:[min-width:0] [&_>_span:nth-child(2)]:[flex:1] [&_strong]:[display:block] [&_small]:[display:block] [&_strong]:[color:#57383a] [&_strong]:[font-size:10px] [&_small]:[margin-top:3px] [&_small]:[color:#9c8583] [&_small]:[font-size:8px]">
-                      <span className="admin-account-avatar [width:31px] [height:31px] [border-radius:50%] [display:grid] [flex:0_0_auto] [place-items:center] [color:#fff8e6] [background:linear-gradient(145deg,_#8f282e,_#c44a46)] [font-size:12px] [font-weight:700]">A</span>
-                      <span><strong>admin</strong><small>Masuk sebagai pengelola</small></span>
-                      <button
-                        type="button"
-                        className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
-                        onClick={() => {
-                          setAdminPasswordStep(false);
-                          setPassword("");
-                          setLoginError("");
-                        }}
-                      >
-                        Kembali
-                      </button>
-                    </div>
-                    <label htmlFor="admin-password">Password admin</label>
-                    <div className="input-wrap [height:43px] [display:flex] [align-items:center] [gap:10px] [margin-bottom:16px] [padding:0_12px] [border:1px_solid_#e8ebe4] [border-radius:7px] [background:#fffdfd] [transition:border-color_.2s,_box-shadow_.2s,_transform_.2s] [&:focus-within]:[border-color:#db7a84] [&:focus-within]:[box-shadow:0_0_0_3px_rgba(219,_122,_132,_.13)] [&:focus-within_.input-icon]:[color:#63814d] [&:focus-within_.input-icon]:[transform:scale(1.08)] [&_input]:[width:100%] [&_input]:[padding:0] [&_input]:[border:0] [&_input]:[outline:0] [&_input]:[color:#453337] [&_input]:[background:transparent] [&_input]:[font-size:10px] [&_input::placeholder]:[color:#b7a9aa] [border-color:#eee5e5]">
-                      <span className="input-icon lock-icon [color:#a37d80] [font-size:15px] [font-size:13px]" aria-hidden="true">▣</span>
+                    {showAdminPasswordStep ? (
+                      <div className="admin-account motion-safe:animate-content-in [display:flex] [align-items:center] [gap:10px] [margin:0_0_18px] [padding:10px] [border:1px_solid_#f0e2e0] [border-radius:8px] [background:#fffafa] [&_>_span:nth-child(2)]:[min-width:0] [&_>_span:nth-child(2)]:[flex:1] [&_strong]:[display:block] [&_small]:[display:block] [&_strong]:[color:#57383a] [&_strong]:[font-size:10px] [&_small]:[margin-top:3px] [&_small]:[color:#9c8583] [&_small]:[font-size:8px]">
+                        <span className="admin-account-avatar [width:31px] [height:31px] [border-radius:50%] [display:grid] [flex:0_0_auto] [place-items:center] [color:#fff8e6] [background:linear-gradient(145deg,_#8f282e,_#c44a46)] [font-size:12px] [font-weight:700]">A</span>
+                        <span><strong>admin</strong><small>Masuk sebagai pengelola</small></span>
+                        <button
+                          type="button"
+                          className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
+                          onClick={() => {
+                            setAdminPasswordStep(false);
+                            setPassword("");
+                            setLoginError("");
+                          }}
+                        >
+                          Kembali
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="admin-account [display:flex] [align-items:center] [gap:10px] [margin:0_0_18px] [padding:10px] [border:1px_solid_#f0e2e0] [border-radius:8px] [background:#fffafa]">
+                        <span className="admin-account-avatar [width:31px] [height:31px] [border-radius:50%] [display:grid] [flex:0_0_auto] [place-items:center] [color:#fff8e6] [background:linear-gradient(145deg,_#8f282e,_#c44a46)] [font-size:12px] [font-weight:700]">{studentName.trim().charAt(0).toUpperCase()}</span>
+                        <span className="[min-width:0] [flex:1]"><strong className="[display:block] [color:#57383a] [font-size:10px]">{studentName}</strong><small className="[display:block] [margin-top:3px] [color:#9c8583] [font-size:8px]">Masuk sebagai pemilih</small></span>
+                        <button
+                          type="button"
+                          className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
+                          onClick={() => {
+                            setStudentPasswordStep(false);
+                            setPassword("");
+                            setLoginError("");
+                          }}
+                        >
+                          Kembali
+                        </button>
+                      </div>
+                    )}
+                    <label htmlFor={showAdminPasswordStep ? "admin-password" : "student-password"}>
+                      {showAdminPasswordStep ? "Password admin" : "Password pemilih"}
+                    </label>
+                    <div className="input-wrap [height:43px] [display:flex] [align-items:center] [gap:10px] [margin-bottom:8px] [padding:0_12px] [border:1px_solid_#e8ebe4] [border-radius:7px] [background:#fffdfd] [transition:border-color_.2s,_box-shadow_.2s,_transform_.2s] [&:focus-within]:[border-color:#db7a84] [&:focus-within]:[box-shadow:0_0_0_3px_rgba(219,_122,_132,_.13)] [&_input]:[width:100%] [&_input]:[padding:0] [&_input]:[border:0] [&_input]:[outline:0] [&_input]:[color:#453337] [&_input]:[background:transparent] [&_input]:[font-size:10px] [&_input::placeholder]:[color:#b7a9aa] [border-color:#eee5e5]">
+                      <span className="input-icon lock-icon [color:#a37d80] [font-size:13px]" aria-hidden="true">▣</span>
                       <input
-                        ref={adminPasswordRef}
-                        id="admin-password"
+                        ref={showAdminPasswordStep ? adminPasswordRef : studentPasswordRef}
+                        id={showAdminPasswordStep ? "admin-password" : "student-password"}
                         name="password"
                         type="password"
+                        inputMode={showStudentPasswordStep ? "numeric" : undefined}
                         autoComplete="current-password"
-                        placeholder="Masukkan password admin"
+                        placeholder={showAdminPasswordStep ? "Masukkan password admin" : "Masukkan password"}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
+                        maxLength={showStudentPasswordStep ? 5 : undefined}
                         required
                       />
                     </div>
@@ -615,9 +682,12 @@ export default function Home() {
                         autoComplete="off"
                         placeholder="Masukkan NIS kamu"
                         value={nis}
+                        maxLength={5}
                         onChange={(event) => {
                           setNis(event.target.value);
                           setAdminPasswordStep(false);
+                          setStudentPasswordStep(false);
+                          setStudentName("");
                           setLoginError("");
                           setPassword("");
                         }}
@@ -631,9 +701,11 @@ export default function Home() {
                 <button className="primary-button login-button [height:44px] [border:0] [border-radius:7px] [display:inline-flex] [align-items:center] [justify-content:center] [gap:14px] [color:#f9faef] [background:#17483b] [font-size:10px] [font-weight:700] [cursor:pointer] [transition:background_.2s,_transform_.2s,_box-shadow_.2s,_opacity_.2s] [&:hover:not(:disabled)]:[background:#225d4b] [&:hover:not(:disabled)]:[transform:translateY(-1px)] [&:active:not(:disabled)]:[transform:translateY(0)_scale(.98)] [&:disabled]:[cursor:wait] [&:focus-visible]:[outline:3px_solid_#b5cd79] [&:focus-visible]:[outline-offset:3px] [&_span]:[font-size:15px] [&_span]:[font-weight:400]" type="submit" disabled={isSubmitting}>
                   {isSubmitting
                     ? "Memeriksa data..."
-                    : showAdminPasswordStep
+                    : showPasswordStep
+                      ? showAdminPasswordStep
                       ? "Masuk ke halaman admin"
-                      : "Masuk & mulai memilih"} {isSubmitting ? (
+                      : "Masuk & mulai memilih"
+                      : "Lanjut ke password"} {isSubmitting ? (
                     <span className="button-spinner motion-safe:animate-spin [width:13px] [height:13px] [flex:0_0_auto] [border:2px_solid_rgba(255,255,255,.4)] [border-top-color:currentColor] [border-radius:50%]" aria-hidden="true" />
                   ) : (
                     <span aria-hidden="true">→</span>

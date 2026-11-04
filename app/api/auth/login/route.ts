@@ -53,8 +53,11 @@ export async function POST(request: Request) {
     }
 
     const nis = body.nis.trim();
-    if (!nis || nis.length > 32 || nis.toLocaleLowerCase("en-US") === "admin") {
+    if (nis.toLocaleLowerCase("en-US") === "admin") {
       return NextResponse.json({ error: "NIS tidak valid." }, { status: 400 });
+    }
+    if (!/^\d{4}$/.test(nis)) {
+      return NextResponse.json({ error: "NIS pemilih harus terdiri dari 4 angka." }, { status: 400 });
     }
 
     const voter = getDatabase()
@@ -68,9 +71,24 @@ export async function POST(request: Request) {
 
     if (!voter) {
       return NextResponse.json(
-        { error: "NIS tidak terdaftar sebagai pemilih." },
+        { error: "NIS atau password pemilih salah." },
         { status: 401 },
       );
+    }
+
+    if ("step" in body && body.step === "identify") {
+      return NextResponse.json({ voter: { name: voter.name } });
+    }
+
+    if (!("password" in body) || typeof body.password !== "string" || body.password.length > 32) {
+      return NextResponse.json({ error: "Password pemilih wajib diisi." }, { status: 400 });
+    }
+
+    const expectedVoterPassword = (BigInt(nis) + BigInt(1)).toString();
+    const submittedVoterPasswordHash = createHash("sha256").update(body.password).digest();
+    const expectedVoterPasswordHash = createHash("sha256").update(expectedVoterPassword).digest();
+    if (!timingSafeEqual(submittedVoterPasswordHash, expectedVoterPasswordHash)) {
+      return NextResponse.json({ error: "NIS atau password pemilih salah." }, { status: 401 });
     }
 
     await createSession(voter.nis);
