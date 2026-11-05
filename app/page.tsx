@@ -200,7 +200,6 @@ export default function Home() {
   const [adminPasswordStep, setAdminPasswordStep] = useState(false);
   const [studentPasswordStep, setStudentPasswordStep] = useState(false);
   const [studentName, setStudentName] = useState("");
-  const [loginTransition, setLoginTransition] = useState<"forward" | "backward" | "">("");
   const adminPasswordRef = useRef<HTMLInputElement>(null);
   const studentPasswordRef = useRef<HTMLInputElement>(null);
   const completionAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -348,6 +347,7 @@ export default function Home() {
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     const cleanNis = nis.trim();
     const adminLogin = cleanNis.toLocaleLowerCase("en-US") === "admin";
     if (!cleanNis) {
@@ -355,7 +355,6 @@ export default function Home() {
       return;
     }
     if (adminLogin && !adminPasswordStep) {
-      setLoginTransition("forward");
       setAdminPasswordStep(true);
       setPassword("");
       setLoginError("");
@@ -380,7 +379,6 @@ export default function Home() {
         };
         if (!response.ok) throw new Error(data.error ?? "NIS tidak terdaftar.");
         setStudentName(data.voter?.name ?? "");
-        setLoginTransition("forward");
         setStudentPasswordStep(true);
         setPassword("");
       } catch (error) {
@@ -435,7 +433,6 @@ export default function Home() {
       setAdminPasswordStep(false);
       setStudentPasswordStep(false);
       setStudentName("");
-      setLoginTransition("");
     } catch (error) {
       setLoginError(
         error instanceof Error
@@ -613,7 +610,7 @@ export default function Home() {
                 <span>{showAdminPasswordStep ? "PORTAL ADMIN" : "PORTAL PEMILIH"}</span>
                 <span className="secure-label [color:#97565f] [&_span]:[color:#cb5260]"><span>✦</span> SUARA MANDARA</span>
               </div>
-              <div key={showPasswordStep ? (showAdminPasswordStep ? "admin" : "student-password") : "student"} className={`form-heading ${loginTransition === "forward" ? "motion-safe:animate-login-slide-left" : loginTransition === "backward" ? "motion-safe:animate-login-slide-right" : "motion-safe:animate-content-in"} [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]`}>
+              <div className="form-heading [position:relative] [margin-top:58px] [&_>_p]:[margin:16px_0_6px] [&_>_p]:[color:#927d7e] [&_>_p]:[font-size:12px] [&_h2]:[margin:0] [&_h2]:[color:#37282b] [&_h2]:[font:700_29px/1.16_'Manrope',_sans-serif] [&_h2]:[letter-spacing:-1.2px] max-[760px]:[margin-top:35px] max-[760px]:[&_h2]:[font-size:27px] [&_h2]:[font-family:'Nunito',_'DM_Sans',_sans-serif] [&_h2]:[font-weight:800]">
                 <span className="form-icon [width:25px] [height:25px] [border-radius:8px] [display:grid] [place-items:center] [color:#b63d4d] [background:#fff0f1] [font-size:16px]">{showPasswordStep ? "▣" : "↗"}</span>
                 <p>{showAdminPasswordStep ? "Selamat datang, admin!" : "Selamat datang, pemilih!"}</p>
                 <h2>
@@ -627,7 +624,7 @@ export default function Home() {
                     : "Masukkan NIS untuk melanjutkan pemilihan."}
                 </span>
               </div>
-              <form key={showPasswordStep ? (showAdminPasswordStep ? "admin-password" : "student-password") : "nis"} className={`login-form ${loginTransition === "forward" ? "motion-safe:animate-login-slide-left" : loginTransition === "backward" ? "motion-safe:animate-login-slide-right" : ""} [display:flex] [flex-direction:column] [margin-top:24px] [&_label]:[margin:0_0_8px] [&_label]:[color:#5a4548] [&_label]:[font-size:10px] [&_label]:[font-weight:700]`} onSubmit={handleLogin}>
+              <form className="login-form [display:flex] [flex-direction:column] [margin-top:24px] [&_label]:[margin:0_0_8px] [&_label]:[color:#5a4548] [&_label]:[font-size:10px] [&_label]:[font-weight:700]" onSubmit={handleLogin}>
                 {showPasswordStep ? (
                   <>
                     {showAdminPasswordStep ? (
@@ -638,7 +635,6 @@ export default function Home() {
                           type="button"
                           className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
                           onClick={() => {
-                            setLoginTransition("backward");
                             setAdminPasswordStep(false);
                             setPassword("");
                             setLoginError("");
@@ -655,7 +651,6 @@ export default function Home() {
                           type="button"
                           className="change-admin-button [padding:6px_8px] [border:0] [border-radius:5px] [color:#a13740] [background:#f9e9e9] [font-size:8px] [font-weight:700] [cursor:pointer] [&:hover]:[background:#f3d9db]"
                           onClick={() => {
-                            setLoginTransition("backward");
                             setStudentPasswordStep(false);
                             setPassword("");
                             setLoginError("");
@@ -702,7 +697,6 @@ export default function Home() {
                         maxLength={5}
                         onChange={(event) => {
                           setNis(event.target.value);
-                          if (studentPasswordStep || adminPasswordStep) setLoginTransition("backward");
                           setAdminPasswordStep(false);
                           setStudentPasswordStep(false);
                           setStudentName("");
